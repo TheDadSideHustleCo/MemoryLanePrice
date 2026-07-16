@@ -1,0 +1,2653 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Price Game">
+<meta name="theme-color" content="#1a1a4e">
+<title>Memory Lane Price Game — The 1960s</title>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --navy:        #0d0d28;
+    --navy-light:  #181840;
+    --navy-mid:    #1e1e50;
+    --gold:        #FF9E42;
+    --gold-bright: #FFBE73;
+    --gold-dark:   #B85C10;
+    --cream:       #FFF8E7;
+    --cream-dim:   rgba(255,248,231,0.75);
+    --wood:        #8B5E3C;
+    --wood-dark:   #6B4423;
+    --green:       #1b8c3a;
+    --green-light: #23b84d;
+    --red:         #c62828;
+    --red-light:   #ef4444;
+    --btn-radius:  14px;
+    --shadow:      0 4px 16px rgba(0,0,0,0.5);
+  }
+
+  html, body {
+    -webkit-text-size-adjust: 100%;
+    text-size-adjust: 100%;
+    height: 100%;
+    height: 100dvh;
+    overflow: hidden;
+    font-family: Georgia, 'Times New Roman', serif;
+    background: var(--wood);
+    color: var(--cream);
+    -webkit-tap-highlight-color: transparent;
+    user-select: none;
+    -webkit-user-select: none;
+    touch-action: manipulation;
+  }
+
+  /* === WOOD GRAIN BACKGROUND === */
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background:
+      repeating-linear-gradient(
+        92deg,
+        transparent,
+        transparent 8px,
+        rgba(0,0,0,0.04) 8px,
+        rgba(0,0,0,0.04) 16px
+      ),
+      linear-gradient(180deg, #9B6A3E 0%, #8B5E3C 40%, #7A4F2E 100%);
+    z-index: 0;
+    pointer-events: none;
+  }
+
+  /* ═══════════════════════════════════════════════════════════
+     VINTAGE TV CABINET
+  ═══════════════════════════════════════════════════════════ */
+  #app {
+    position: relative;
+    z-index: 1;
+    width: 100%;
+    height: 100%;
+    height: 100dvh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    touch-action: manipulation;
+    /* Safe-area insets keep TV clear of notch/home indicator on iOS */
+    padding: max(2px, env(safe-area-inset-top))
+             max(2px, env(safe-area-inset-right))
+             max(2px, env(safe-area-inset-bottom))
+             max(2px, env(safe-area-inset-left));
+  }
+
+  /* ── TV wrap: relative container, aspect-ratio matches SVG viewBox ── */
+  .tv-wrap {
+    position: relative;
+    width: min(98dvw, calc(98svh * 0.8));
+    aspect-ratio: 480 / 600;
+    filter: drop-shadow(0 24px 64px rgba(0,0,0,0.82));
+  }
+  /* Padding-hack safety net: gives .tv-wrap a definite height even when
+     aspect-ratio is ignored (flex item with only abs-positioned children).
+     padding-top % is relative to CONTAINING BLOCK WIDTH = .tv-wrap's own width.
+     125% = 600/480 = the same ratio as aspect-ratio above.          */
+  .tv-wrap::before {
+    content: '';
+    display: block;
+    padding-top: 125%;
+  }
+
+  /* ── SVG TV frame: floats on top, no pointer events ── */
+  .tv-frame-svg {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    pointer-events: none;
+    z-index: 10;
+  }
+
+  /* ═══════════════════════════════════════════════════════════
+     ACTUAL GAME SCREEN — sits inside SVG screen hole
+     SVG viewBox 480×600; screen hole: x=38 y=85 w=374 h=400
+     CSS %: left=38/480  top=85/600  w=374/480  h=400/600
+  ═══════════════════════════════════════════════════════════ */
+  .tv-screen {
+    position: absolute;
+    left:   7.917%;   /* 38/480  */
+    top:   14.167%;   /* 85/600  */
+    width: 77.917%;   /* 374/480 */
+    height: 66.667%;  /* 400/600 */
+    background: var(--navy);
+    border-radius: 3.2%;   /* matches SVG rx=12 on 374px wide */
+    box-shadow:
+      0 0 24px rgba(80,120,255,0.15),
+      inset 0 0 40px rgba(0,0,0,0.4);
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    z-index: 1;
+    container-type: size; /* enables cqw/cqh units for all child screens */
+  }
+
+  /* Very faint CRT vignette — doesn't hurt readability */
+  .tv-screen::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: radial-gradient(ellipse at 50% 50%,
+      transparent 55%,
+      rgba(0,0,0,0.28) 100%
+    );
+    pointer-events: none;
+    border-radius: 3.2%;
+    z-index: 100;
+  }
+
+  /* === HEADER === */
+  .header {
+    background: linear-gradient(180deg, var(--navy-mid) 0%, var(--navy) 100%);
+    border-bottom: 2px solid var(--gold-dark);
+    padding: 8px 14px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-shrink: 0;
+    gap: 8px;
+  }
+
+  .header-home-btn {
+    background: none;
+    border: none;
+    font-size: clamp(20px, 6cqw, 26px);
+    cursor: pointer;
+    padding: 0 6px 0 0;
+    line-height: 1;
+    opacity: 0.85;
+    transition: opacity 0.15s, transform 0.15s;
+    touch-action: manipulation;
+  }
+  .header-home-btn:active { opacity: 1; transform: scale(1.15); }
+
+  .header-title {
+    color: var(--gold);
+    font-size: clamp(13px, 4cqw, 18px);
+    font-weight: bold;
+    letter-spacing: 1px;
+    text-shadow: 0 1px 4px rgba(0,0,0,0.5);
+    flex: 1;
+    text-align: center;
+  }
+
+  .header-score {
+    color: var(--gold);
+    font-size: clamp(12px, 3.5cqw, 16px);
+    font-weight: bold;
+    background: rgba(0,0,0,0.3);
+    padding: 4px 12px;
+    border-radius: 20px;
+    border: 1px solid var(--gold-dark);
+  }
+
+  .progress-bar-wrap {
+    background: rgba(0,0,0,0.3);
+    height: 6px;
+    flex-shrink: 0;
+  }
+  .progress-bar {
+    height: 6px;
+    background: linear-gradient(90deg, var(--gold-dark), var(--gold));
+    transition: width 0.4s ease;
+    width: 0%;
+  }
+
+  /* === SCREENS === */
+  .screen {
+    display: none;
+    flex: 1;
+    flex-direction: column;
+    padding: 20px 16px;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    /* Rich deep background with subtle radial highlight at top */
+    background: radial-gradient(ellipse 80% 50% at 50% 0%,
+      rgba(40,40,100,0.6) 0%,
+      transparent 70%
+    );
+  }
+  .screen.active { display: flex; }
+
+  /* === WELCOME SCREEN — scroll area + docked Start button === */
+  /* Override base .screen layout for welcome */
+  #screen-welcome {
+    justify-content: flex-start;
+    padding: 0;
+    container-type: size; /* enables cqi/cqb units inside */
+  }
+
+  /* Scrollable area: logo, title, numpad */
+  .welcome-scroll {
+    flex: 1;
+    min-height: 0;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+    padding: 10px 14px 6px;
+    gap: 0;
+  }
+
+  /* Docked Start button — always visible, never scrolls away */
+  .start-btn-dock {
+    flex-shrink: 0;
+    padding: 8px 14px 10px;
+    background: linear-gradient(to top, var(--navy) 60%, rgba(13,13,40,0.88) 100%);
+    border-top: 1px solid var(--gold-dark);
+  }
+
+  .welcome-logo {
+    font-size: clamp(26px, 7cqw, 44px);
+    margin-bottom: 2px;
+    animation: glow 3s ease-in-out infinite;
+  }
+  @keyframes glow {
+    0%, 100% { filter: drop-shadow(0 0 8px rgba(255,215,0,0.4)); }
+    50% { filter: drop-shadow(0 0 20px rgba(255,215,0,0.8)); }
+  }
+
+  .welcome-title {
+    color: var(--gold);
+    font-size: clamp(20px, 5.5cqw, 34px);
+    font-weight: bold;
+    margin-bottom: 4px;
+    text-shadow: 0 2px 8px rgba(0,0,0,0.5);
+  }
+
+  .welcome-sub {
+    color: var(--cream);
+    font-size: clamp(13px, 3.2cqw, 17px);
+    margin-bottom: 8px;
+    opacity: 0.85;
+    line-height: 1.4;
+  }
+
+  /* Caregiver settings — inline under subtitle */
+  .cg-corner-btn {
+    background: rgba(255,255,255,0.1);
+    border: 1.5px solid rgba(255,215,0,0.45);
+    border-radius: 10px;
+    color: var(--cream);
+    font-size: clamp(11px, 2.6cqw, 13px);
+    padding: 7px 14px;
+    cursor: pointer;
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    line-height: 1.3;
+    touch-action: manipulation;
+    margin: 6px auto 10px;
+    width: fit-content;
+  }
+  .cg-corner-btn span.cg-icon { font-size: clamp(16px, 4cqw, 20px); }
+
+  /* === BIRTH YEAR INPUT === */
+  .birth-year-label {
+    color: var(--gold);
+    font-size: clamp(12px, 3cqw, 16px);
+    font-weight: bold;
+    margin-bottom: 4px;
+    display: block;
+  }
+
+  .year-display {
+    background: rgba(0,0,0,0.4);
+    border: 2px solid var(--gold-dark);
+    border-radius: 10px;
+    color: var(--gold);
+    font-size: clamp(22px, 6cqw, 38px);
+    font-weight: bold;
+    letter-spacing: 5px;
+    padding: 6px 16px;
+    margin: 0 auto 8px;
+    min-width: 140px;
+    text-align: center;
+    font-family: 'Courier New', monospace;
+  }
+
+  .year-buttons {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 5px;
+    width: 100%;
+    max-width: 320px;
+    margin: 0 auto 6px;
+  }
+
+  .num-btn {
+    background: var(--navy-light);
+    border: 2px solid var(--gold-dark);
+    border-radius: var(--btn-radius);
+    color: var(--gold);
+    font-size: clamp(17px, 4.5cqw, 24px);
+    font-weight: bold;
+    padding: 9px 0;           /* was 14px — saves 30px across 3 rows */
+    min-height: 44px;         /* minimum touch target */
+    cursor: pointer;
+    box-shadow: var(--shadow);
+    transition: all 0.12s;
+    -webkit-tap-highlight-color: transparent;
+    touch-action: manipulation;
+  }
+  .num-btn:active { transform: scale(0.93); background: var(--gold-dark); color: var(--navy); }
+
+  .clear-btn {
+    background: rgba(198,40,40,0.3);
+    border-color: #c62828;
+    color: #ff8080;
+  }
+
+  /* === DECADE SELECTOR (replaces numpad) === */
+  .decade-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 7px;
+    width: 100%;
+    max-width: 310px;
+    margin: 0 auto 6px;
+  }
+  .decade-btn {
+    background: var(--navy-light);
+    border: 2px solid var(--gold-dark);
+    border-radius: 12px;
+    cursor: pointer;
+    padding: 10px 6px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 2px;
+    touch-action: manipulation;
+    -webkit-tap-highlight-color: transparent;
+    transition: all 0.12s;
+    min-height: 54px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.35);
+  }
+  .decade-num {
+    font-size: clamp(15px, 4cqw, 20px);
+    font-weight: bold;
+    color: var(--gold);
+    line-height: 1;
+  }
+  .decade-sub {
+    font-size: 14px;
+    opacity: 0.6;
+    color: var(--cream);
+  }
+  .decade-btn.selected {
+    background: rgba(200,146,10,0.22);
+    border-color: var(--gold);
+    box-shadow: 0 0 14px rgba(255,215,0,0.35), 0 2px 8px rgba(0,0,0,0.35);
+  }
+  .decade-btn:active { transform: scale(0.94); }
+
+  /* === TTS READ-ALOUD BUTTON (in question header) === */
+  .tts-btn {
+    background: none;
+    border: none;
+    font-size: clamp(16px, 4vw, 20px);
+    cursor: pointer;
+    padding: 0 3px;
+    opacity: 0.65;
+    transition: opacity 0.15s, transform 0.15s;
+    touch-action: manipulation;
+    line-height: 1;
+    flex-shrink: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 1px;
+  }
+  .tts-btn:active { opacity: 1; transform: scale(1.2); }
+  .tts-btn.speaking { opacity: 1; animation: tts-pulse 0.8s ease-in-out infinite; }
+  @keyframes tts-pulse {
+    0%,100% { opacity: 1; } 50% { opacity: 0.45; }
+  }
+
+  /* === BIG BUTTONS === */
+  .big-btn {
+    background: linear-gradient(180deg, var(--gold-bright) 0%, var(--gold) 45%, var(--gold-dark) 100%);
+    border: none;
+    border-radius: var(--btn-radius);
+    color: #1a1000;
+    font-size: clamp(17px, 4vw, 22px);
+    font-weight: bold;
+    padding: 16px 28px;
+    cursor: pointer;
+    box-shadow: var(--shadow), 0 2px 0 rgba(0,0,0,0.4), inset 0 1px 0 rgba(255,255,255,0.35);
+    transition: all 0.12s;
+    width: 100%;
+    max-width: 360px;
+    letter-spacing: 0.5px;
+    touch-action: manipulation;
+    font-family: Georgia, serif;
+  }
+  .big-btn:active { transform: translateY(2px); box-shadow: 0 2px 6px rgba(0,0,0,0.3); }
+  .big-btn:disabled { opacity: 0.4; pointer-events: none; }
+
+  .cg-open-btn {
+    display: block;
+    width: 100%;
+    background: rgba(255,215,0,0.1);
+    border: 1px solid rgba(255,215,0,0.35);
+    border-radius: 10px;
+    color: rgba(255,248,231,0.75);
+    font-size: clamp(14px, 3.8cqw, 17px);
+    cursor: pointer;
+    padding: 10px 14px;
+    letter-spacing: 0.5px;
+    margin-top: 8px;
+    touch-action: manipulation;
+    transition: background 0.15s, border-color 0.15s;
+  }
+  .cg-open-btn:active {
+    background: rgba(255,215,0,0.2);
+    border-color: rgba(255,215,0,0.6);
+  }
+
+  .btn-navy {
+    background: linear-gradient(180deg, #232360 0%, var(--navy) 100%);
+    color: var(--gold);
+    border: 2px solid var(--gold-dark);
+    box-shadow: var(--shadow), inset 0 1px 0 rgba(255,255,255,0.08);
+  }
+
+  /* === QUESTION SCREEN === */
+  .era-badge {
+    background: rgba(255,215,0,0.15);
+    border: 2px solid var(--gold-dark);
+    border-radius: 20px;
+    color: var(--gold);
+    font-size: clamp(11px, 2.8vw, 13px);
+    padding: 2px 10px;
+    margin-bottom: 3px;
+    letter-spacing: 1px;
+    flex-shrink: 0;
+  }
+
+  .question-number {
+    color: rgba(255,248,231,0.6);
+    font-size: clamp(11px, 2.5vw, 13px);
+    margin-bottom: 2px;
+    flex-shrink: 0;
+  }
+
+  .question-category {
+    font-size: clamp(14px, 3.5vw, 20px);
+    margin-bottom: 3px;
+    flex-shrink: 0;
+  }
+
+  .question-text {
+    color: var(--cream);
+    font-size: clamp(15px, 4.5cqw, 20px);
+    line-height: 1.35;
+    margin-bottom: 0;
+    font-weight: bold;
+    flex-shrink: 0;
+  }
+
+  /* === QUESTION SCREEN LAYOUT === */
+  #screen-question {
+    padding: 0;
+    flex-direction: column;
+    overflow: hidden;
+    justify-content: flex-start;
+  }
+  /* Top zone: question text — shrinks but never grows beyond 38% */
+  .q-top {
+    flex: 0 1 auto;
+    max-height: 48%;
+    overflow: visible;
+    padding: 6px 12px 2px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    width: 100%;
+    gap: 0;
+  }
+  /* Bottom zone: options + post-answer content — takes remaining space, scrolls if needed */
+  .q-bottom {
+    flex: 1 1 auto;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+    padding: 4px 12px 8px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    width: 100%;
+    gap: 0;
+    min-height: 0;
+  }
+  /* Legacy alias — keep in case JS still references it */
+  .q-scroll-area {
+    display: contents;
+  }
+  .options-outer {
+    display: contents;
+  }
+  .next-btn-dock {
+    flex-shrink: 0;
+    display: none;
+    padding: 10px 14px 14px;
+    width: 100%;
+    background: linear-gradient(to bottom, transparent 0%, var(--navy) 20%);
+    box-sizing: border-box;
+  }
+  .next-btn-dock.show { display: block; }
+  .next-btn-dock .big-btn { width: 100%; max-width: 560px; display: block; margin: 0 auto; }
+
+  .options-grid {
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+    width: 100%;
+    max-width: 560px;
+    margin-top: 4px;
+  }
+
+  .option-btn {
+    background: linear-gradient(160deg, #1e1e52 0%, #14143a 100%);
+    border: 2px solid rgba(255,215,0,0.28);
+    border-radius: var(--btn-radius);
+    color: var(--cream);
+    font-size: clamp(14px, 4cqw, 18px);
+    font-weight: bold;
+    padding: 9px 12px;
+    cursor: pointer;
+    text-align: left;
+    line-height: 1.3;
+    transition: background 0.15s, border-color 0.15s, transform 0.1s;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    touch-action: manipulation;
+    font-family: Georgia, serif;
+    min-height: 44px;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.4), inset 0 1px 0 rgba(255,255,255,0.05);
+  }
+  /* Gentle Mode — large emoji + label buttons */
+  .option-btn-gentle {
+    min-height: 90px;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    text-align: center;
+    border-width: 3px;
+    border-color: rgba(255,215,0,0.5);
+    gap: 4px;
+  }
+  .option-btn-gentle .option-letter { display: none; }
+  .gentle-emoji {
+    font-size: clamp(40px, 12cqw, 60px);
+    line-height: 1.1;
+    display: block;
+  }
+  .gentle-label {
+    font-size: clamp(14px, 3.5cqw, 18px);
+    color: var(--cream);
+    display: block;
+    font-weight: bold;
+    letter-spacing: 0.5px;
+  }
+
+  /* Memory Care mode — 2 large buttons */
+  .option-btn-mc {
+    min-height: 80px;
+    font-size: clamp(18px, 5.5cqw, 26px) !important;
+    justify-content: center;
+    text-align: center;
+    border-width: 3px;
+    border-color: rgba(255,215,0,0.5);
+  }
+  .option-btn-mc .option-letter { display: none; }
+
+  .option-btn:hover:not(:disabled) {
+    background: linear-gradient(160deg, #28286a 0%, #1a1a4e 100%);
+    border-color: rgba(255,215,0,0.55);
+  }
+  .option-btn:active:not(:disabled) { transform: scale(0.97); }
+  .option-btn:disabled { cursor: default; }
+
+  .option-letter {
+    background: rgba(255,215,0,0.18);
+    border: 1px solid rgba(255,215,0,0.35);
+    border-radius: 50%;
+    width: 38px;
+    height: 38px;
+    min-width: 38px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: clamp(15px, 3.2vw, 18px);
+    color: var(--gold);
+    font-weight: bold;
+  }
+
+  .option-btn.correct {
+    background: linear-gradient(160deg, rgba(27,140,58,0.55) 0%, rgba(14,90,34,0.55) 100%) !important;
+    border-color: var(--green-light) !important;
+    border-width: 3px !important;
+    color: #b8f0cc !important;
+  }
+  .option-btn.correct .option-letter {
+    background: rgba(35,184,77,0.35);
+    border-color: var(--green-light);
+    color: #b8f0cc;
+  }
+  .option-btn.wrong {
+    background: linear-gradient(160deg, rgba(198,40,40,0.45) 0%, rgba(140,20,20,0.45) 100%) !important;
+    border-color: var(--red-light) !important;
+    border-width: 3px !important;
+    color: #fca5a5 !important;
+  }
+  .option-btn.wrong .option-letter {
+    background: rgba(239,68,68,0.25);
+    border-color: var(--red-light);
+    color: #fca5a5;
+  }
+
+  /* === FUN FACT === */
+  .fun-fact-box {
+    display: none;
+    flex-shrink: 0;
+    background: rgba(255,215,0,0.08);
+    border-top: 2px solid var(--gold-dark);
+    border-bottom: 2px solid var(--gold-dark);
+    padding: 8px 14px;
+    text-align: left;
+    width: 100%;
+    animation: fadeInUp 0.3s ease;
+    box-sizing: border-box;
+  }
+  .fun-fact-box.show { display: block; }
+  @keyframes fadeInUp {
+    from { opacity: 0; transform: translateY(6px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+
+  .fun-fact-label {
+    color: var(--gold);
+    font-size: clamp(12px, 3cqw, 14px);
+    font-weight: bold;
+    letter-spacing: 1px;
+    margin-bottom: 3px;
+    text-transform: uppercase;
+  }
+
+  .fun-fact-text {
+    color: var(--cream);
+    font-size: clamp(13px, 3.5cqw, 16px);
+    line-height: 1.4;
+    opacity: 0.9;
+  }
+
+  /* === RESULT SCREEN === */
+  #screen-result {
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+    padding: 10px 16px 24px;
+    justify-content: flex-start;
+  }
+  .result-era-badge {
+    background: linear-gradient(135deg, var(--gold-dark), var(--gold));
+    color: var(--navy);
+    font-size: clamp(10px, 2.5cqw, 12px);
+    font-weight: 800;
+    padding: 3px 12px;
+    border-radius: 20px;
+    letter-spacing: 0.5px;
+    margin-bottom: 6px;
+    text-transform: uppercase;
+  }
+  .result-emoji {
+    font-size: clamp(36px, 10cqw, 54px);
+    margin-bottom: 4px;
+    animation: bounce 0.6s ease;
+  }
+  @keyframes bounce {
+    0%, 100% { transform: translateY(0); }
+    40% { transform: translateY(-12px); }
+  }
+  .result-title {
+    color: var(--gold);
+    font-size: clamp(20px, 5.5cqw, 30px);
+    font-weight: bold;
+    margin-bottom: 6px;
+    text-shadow: 0 2px 8px rgba(0,0,0,0.4);
+  }
+  /* Big score display: 16 / 20 */
+  .result-score-big {
+    display: flex;
+    align-items: baseline;
+    justify-content: center;
+    gap: 6px;
+    margin-bottom: 4px;
+  }
+  .result-score-num {
+    color: var(--gold);
+    font-size: clamp(36px, 10cqw, 56px);
+    font-weight: 900;
+    line-height: 1;
+    font-family: 'Courier New', monospace;
+  }
+  .result-score-sep {
+    color: rgba(255,248,231,0.4);
+    font-size: clamp(22px, 6cqw, 36px);
+    font-weight: 300;
+  }
+  .result-score-total {
+    color: rgba(255,248,231,0.6);
+    font-size: clamp(22px, 6cqw, 36px);
+    font-weight: 700;
+    font-family: 'Courier New', monospace;
+  }
+  /* Star rating */
+  .result-stars {
+    font-size: clamp(18px, 5cqw, 26px);
+    margin-bottom: 6px;
+    letter-spacing: 3px;
+  }
+  .result-message {
+    color: var(--cream);
+    font-size: clamp(13px, 3.5cqw, 16px);
+    line-height: 1.5;
+    margin-bottom: 14px;
+    opacity: 0.9;
+    max-width: 400px;
+    text-align: center;
+  }
+  /* Simple mode (Gentle / Memory Care) */
+  .result-simple-emoji {
+    font-size: clamp(50px, 14cqw, 72px);
+    margin-bottom: 8px;
+    animation: bounce 0.6s ease;
+  }
+  .result-simple-title {
+    color: var(--gold);
+    font-size: clamp(22px, 6cqw, 32px);
+    font-weight: bold;
+    margin-bottom: 8px;
+  }
+  .result-simple-msg {
+    color: var(--cream);
+    font-size: clamp(14px, 4cqw, 18px);
+    line-height: 1.5;
+    margin-bottom: 16px;
+    opacity: 0.9;
+    max-width: 360px;
+    text-align: center;
+  }
+  .result-buttons {
+    display: flex;
+    flex-direction: row;
+    gap: 8px;
+    width: 100%;
+    max-width: 380px;
+  }
+  .result-buttons .big-btn {
+    flex: 1;
+    padding: 12px 8px;
+    font-size: clamp(13px, 3.5cqw, 16px);
+    max-width: none;
+  }
+
+  /* === LANDSCAPE OVERLAY === */
+  #landscape-overlay {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: var(--navy);
+    z-index: 99999;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 16px;
+    text-align: center;
+    padding: 30px;
+  }
+  #landscape-overlay.show { display: flex; }
+  .landscape-icon {
+    font-size: 72px;
+    animation: rotateHint 2s ease-in-out infinite;
+  }
+  @keyframes rotateHint {
+    0%, 100% { transform: rotate(0deg); }
+    40%       { transform: rotate(-90deg); }
+    60%       { transform: rotate(-90deg); }
+  }
+  .landscape-title {
+    color: var(--gold);
+    font-size: clamp(20px, 5vw, 28px);
+    font-weight: bold;
+  }
+  .landscape-sub {
+    color: var(--cream);
+    font-size: clamp(14px, 3vw, 18px);
+    opacity: 0.75;
+  }
+
+  /* === HOW TO PLAY MODAL === */
+  #help-overlay {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.85);
+    z-index: 9998;
+    align-items: center;
+    justify-content: center;
+    padding: 16px;
+  }
+  #help-overlay.show { display: flex; }
+  .help-modal {
+    background: var(--navy-light);
+    border: 2px solid rgba(255,215,0,0.4);
+    border-radius: 18px;
+    padding: 20px;
+    max-width: 420px;
+    width: 100%;
+    color: var(--cream);
+    font-family: inherit;
+  }
+  .help-title {
+    color: var(--gold);
+    font-size: clamp(18px, 5cqw, 24px);
+    font-weight: bold;
+    text-align: center;
+    margin-bottom: 16px;
+  }
+  .help-step {
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+    margin-bottom: 14px;
+  }
+  .help-step-num {
+    background: var(--gold);
+    color: var(--navy);
+    font-weight: 900;
+    font-size: 14px;
+    width: 26px;
+    height: 26px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+  }
+  .help-step-text {
+    font-size: clamp(13px, 3.5cqw, 15px);
+    line-height: 1.5;
+    opacity: 0.9;
+  }
+  .help-step-text strong { color: var(--gold); }
+
+  /* === LOADING SCREEN === */
+  .loading-wrap {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 16px;
+  }
+
+  .spinner {
+    width: 48px;
+    height: 48px;
+    border: 4px solid rgba(255,215,0,0.2);
+    border-top-color: var(--gold);
+    border-radius: 50%;
+    animation: spin 0.8s linear infinite;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  .loading-text {
+    color: var(--gold);
+    font-size: clamp(14px, 3.5vw, 18px);
+  }
+
+  /* === ERROR SCREEN === */
+  .error-box {
+    background: rgba(198,40,40,0.2);
+    border: 2px solid #c62828;
+    border-radius: 12px;
+    padding: 20px;
+    max-width: 440px;
+    text-align: center;
+  }
+  .error-title { color: #ff8080; font-size: 22px; margin-bottom: 8px; }
+  .error-msg { color: var(--cream); font-size: 15px; line-height: 1.5; }
+
+  /* === CONFETTI === */
+  #confetti-canvas {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    pointer-events: none;
+    z-index: 999;
+    opacity: 0;
+    transition: opacity 0.3s;
+  }
+  #confetti-canvas.show { opacity: 1; }
+
+  /* === CATEGORY ICONS === */
+  .cat-music::before    { content: '🎵 '; }
+  .cat-television::before { content: '📺 '; }
+  .cat-movies::before   { content: '🎬 '; }
+  .cat-sports::before   { content: '🏆 '; }
+  .cat-world_events::before { content: '🌎 '; }
+  .cat-pop_culture::before { content: '⭐ '; }
+
+  /* === ANSWER FEEDBACK FLASH === */
+  @keyframes flashGreen {
+    0% { background: rgba(46,125,50,0); }
+    30% { background: rgba(46,125,50,0.3); }
+    100% { background: rgba(46,125,50,0); }
+  }
+  @keyframes flashRed {
+    0% { background: rgba(198,40,40,0); }
+    30% { background: rgba(198,40,40,0.3); }
+    100% { background: rgba(198,40,40,0); }
+  }
+  .flash-correct { animation: flashGreen 0.6s ease; }
+  .flash-wrong   { animation: flashRed 0.6s ease; }
+
+  /* Responsive landscape / small screens */
+  @media (max-height: 500px) {
+    .question-text { font-size: 15px; }
+    .option-btn { padding: 9px 14px; min-height: 46px; font-size: 15px; }
+    .option-letter { width: 30px; height: 30px; min-width: 30px; font-size: 13px; }
+    .fun-fact-box { padding: 5px 10px; }
+    .fun-fact-text { font-size: clamp(13px, 3.5cqw, 15px); }
+    .header { padding: 5px 10px; }
+  }
+
+  /* Scrollbar */
+  .screen::-webkit-scrollbar { width: 6px; }
+  .screen::-webkit-scrollbar-track { background: transparent; }
+  .screen::-webkit-scrollbar-thumb { background: rgba(255,215,0,0.2); border-radius: 3px; }
+
+  /* ── ACCESSIBILITY: minimum 16px font floor for all game text ── */
+  .question-text  { font-size: max(16px, clamp(15px, 4.5cqw, 22px)) !important; }
+  .option-btn     { font-size: max(16px, clamp(15px, 4cqw, 18px)) !important; }
+  .fun-fact-text  { font-size: max(16px, clamp(14px, 3.5cqw, 18px)) !important; }
+  .q-number       { font-size: max(16px, clamp(13px, 3.5cqw, 17px)) !important; }
+  .q-category     { font-size: max(16px, clamp(12px, 3.2cqw, 16px)) !important; }
+  .result-title   { font-size: max(16px, clamp(16px, 5cqw, 26px)) !important; }
+  .result-score-num   { font-size: max(44px, clamp(44px, 13cqw, 72px)) !important; }
+  .result-message { font-size: max(16px, clamp(14px, 3.8cqw, 18px)) !important; }
+
+  /* Conversation prompt box */
+  #cg-prompt-box {
+    display: none;
+    background: rgba(255,248,231,0.1);
+    border: 1px solid rgba(255,215,0,0.3);
+    border-radius: 10px;
+    padding: 10px 14px;
+    margin-top: 10px;
+    font-size: 16px;
+    color: var(--cream);
+    line-height: 1.4;
+    text-align: center;
+  }
+  #cg-prompt-box.show { display: block; }
+</style>
+</head>
+<body>
+
+<canvas id="confetti-canvas"></canvas>
+
+<div id="app">
+  <div class="tv-wrap">
+
+    <!-- ═══ SVG VINTAGE TV FRAME ═══ -->
+    <svg class="tv-frame-svg" viewBox="0 0 480 600" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+      <defs>
+        <!-- Plastic body gradient: warm ivory, light-from-top-left -->
+        <linearGradient id="bodyGrad" x1="0" y1="0" x2="0.28" y2="1">
+          <stop offset="0%"   stop-color="#ece8e2"/>
+          <stop offset="20%"  stop-color="#dedad4"/>
+          <stop offset="50%"  stop-color="#c4c0ba"/>
+          <stop offset="78%"  stop-color="#ccc8c2"/>
+          <stop offset="100%" stop-color="#dedad4"/>
+        </linearGradient>
+        <!-- Knob: dark sphere with specular highlight -->
+        <radialGradient id="knobGrad" cx="36%" cy="34%" r="62%">
+          <stop offset="0%"   stop-color="#c4c0bc"/>
+          <stop offset="30%"  stop-color="#888686"/>
+          <stop offset="62%"  stop-color="#565656"/>
+          <stop offset="100%" stop-color="#252525"/>
+        </radialGradient>
+        <!-- Foot gradient -->
+        <linearGradient id="footGrad" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%"   stop-color="#b0aca8"/>
+          <stop offset="100%" stop-color="#787472"/>
+        </linearGradient>
+        <!--
+          Body mask: shows body rect but cuts out bezel+screen area.
+          Body paint only shows in outer plastic areas.
+        -->
+        <mask id="bodyMask">
+          <rect x="12" y="60" width="456" height="512" rx="38" fill="white"/>
+          <rect x="34" y="81" width="382" height="408" rx="16" fill="black"/>
+        </mask>
+        <!--
+          Bezel mask: shows bezel ring only — cuts out the actual screen hole.
+          This lets the game screen div (behind the SVG) show through.
+        -->
+        <mask id="bezelMask">
+          <rect x="34" y="81" width="382" height="408" rx="16" fill="white"/>
+          <rect x="38" y="85" width="374" height="400" rx="12" fill="black"/>
+        </mask>
+      </defs>
+
+      <!-- ── ANTENNA ── -->
+      <!-- Left rod: from base (240,70) to tip (158,7) -->
+      <line x1="240" y1="70" x2="158" y2="7" stroke="#b8b4b0" stroke-width="5.5" stroke-linecap="round"/>
+      <!-- Right rod -->
+      <line x1="240" y1="70" x2="322" y2="7" stroke="#b8b4b0" stroke-width="5.5" stroke-linecap="round"/>
+      <!-- Tip balls -->
+      <circle cx="158" cy="7"  r="4.5" fill="#a0a09a"/>
+      <circle cx="322" cy="7"  r="4.5" fill="#a0a09a"/>
+      <!-- Antenna base block -->
+      <rect x="228" y="56" width="24" height="16" rx="5" fill="#a4a09c"/>
+      <rect x="229" y="57" width="22" height="8"  rx="3" fill="rgba(255,255,255,0.22)"/>
+
+      <!-- ── DARK BEZEL RING (screen hole cut out via bezelMask) ── -->
+      <!-- bezelMask shows outer ring only; screen area is transparent so game shows through -->
+      <rect x="34" y="81" width="382" height="408" rx="16"
+            fill="#0c0c1e" mask="url(#bezelMask)"/>
+      <!-- Inner shadow on bezel ring -->
+      <rect x="34" y="81" width="382" height="408" rx="16"
+            fill="none" stroke="rgba(0,0,0,0.65)" stroke-width="7"
+            mask="url(#bezelMask)"/>
+
+      <!-- ── TV BODY PLASTIC (masked; screen hole is transparent) ── -->
+      <rect x="12" y="60" width="456" height="512" rx="38"
+            fill="url(#bodyGrad)" mask="url(#bodyMask)"/>
+      <!-- Top specular sheen -->
+      <ellipse cx="238" cy="73" rx="148" ry="16"
+               fill="rgba(255,255,255,0.44)" mask="url(#bodyMask)"/>
+      <!-- Left-edge highlight -->
+      <rect x="12" y="65" width="30" height="500"
+            fill="rgba(255,255,255,0.16)" mask="url(#bodyMask)"/>
+      <!-- Right-edge shadow -->
+      <rect x="438" y="65" width="30" height="500"
+            fill="rgba(0,0,0,0.10)" mask="url(#bodyMask)"/>
+      <!-- Body outer shadow border -->
+      <rect x="12" y="60" width="456" height="512" rx="38"
+            fill="none" stroke="rgba(0,0,0,0.38)" stroke-width="3"
+            mask="url(#bodyMask)"/>
+      <!-- Body inner highlight border -->
+      <rect x="14" y="62" width="452" height="508" rx="36"
+            fill="none" stroke="rgba(255,255,255,0.42)" stroke-width="1.5"
+            mask="url(#bodyMask)"/>
+
+      <!-- ── BRAND & CONTROLS (chin below screen, y=489–572) ── -->
+      <!-- Brand name -->
+      <text x="240" y="526"
+            text-anchor="middle"
+            font-family="Georgia, 'Times New Roman', serif"
+            font-size="13" letter-spacing="5" font-weight="bold"
+            fill="#6b4820">MEMORY LANE</text>
+
+      <!-- Power indicator light (green, animated pulse) -->
+      <circle cx="240" cy="546" r="5.5" fill="#1fb845">
+        <animate attributeName="opacity" values="1;0.28;1" dur="2.6s" repeatCount="indefinite"/>
+      </circle>
+      <circle cx="240" cy="546" r="9" fill="none" stroke="#22c44e" stroke-width="1.5" opacity="0.35">
+        <animate attributeName="opacity" values="0.35;0.04;0.35" dur="2.6s" repeatCount="indefinite"/>
+      </circle>
+
+      <!-- VOL knob (left) -->
+      <circle cx="86" cy="524" r="23" fill="url(#knobGrad)"/>
+      <circle cx="86" cy="524" r="22" fill="none" stroke="rgba(0,0,0,0.45)" stroke-width="1.5"/>
+      <!-- Knob indicator tick -->
+      <line x1="86" y1="505" x2="86" y2="514"
+            stroke="rgba(255,255,255,0.48)" stroke-width="2.5" stroke-linecap="round"/>
+      <text x="86" y="554" text-anchor="middle"
+            font-family="Georgia, serif" font-size="10.5" fill="#5a3c16">VOL</text>
+
+      <!-- CH knob (right) -->
+      <circle cx="394" cy="524" r="23" fill="url(#knobGrad)"/>
+      <circle cx="394" cy="524" r="22" fill="none" stroke="rgba(0,0,0,0.45)" stroke-width="1.5"/>
+      <line x1="394" y1="505" x2="394" y2="514"
+            stroke="rgba(255,255,255,0.48)" stroke-width="2.5" stroke-linecap="round"/>
+      <text x="394" y="554" text-anchor="middle"
+            font-family="Georgia, serif" font-size="10.5" fill="#5a3c16">CH</text>
+
+      <!-- Ventilation slots (subtle, around power light) -->
+      <rect x="158" y="541" width="18" height="4" rx="2" fill="rgba(0,0,0,0.17)"/>
+      <rect x="182" y="541" width="18" height="4" rx="2" fill="rgba(0,0,0,0.17)"/>
+      <rect x="206" y="541" width="18" height="4" rx="2" fill="rgba(0,0,0,0.17)"/>
+      <rect x="258" y="541" width="18" height="4" rx="2" fill="rgba(0,0,0,0.17)"/>
+      <rect x="282" y="541" width="18" height="4" rx="2" fill="rgba(0,0,0,0.17)"/>
+      <rect x="306" y="541" width="18" height="4" rx="2" fill="rgba(0,0,0,0.17)"/>
+
+      <!-- ── FEET ── -->
+      <rect x="50"  y="566" width="40" height="22" rx="7" fill="url(#footGrad)"/>
+      <rect x="51"  y="567" width="38" height="8"  rx="4" fill="rgba(255,255,255,0.18)"/>
+      <rect x="390" y="566" width="40" height="22" rx="7" fill="url(#footGrad)"/>
+      <rect x="391" y="567" width="38" height="8"  rx="4" fill="rgba(255,255,255,0.18)"/>
+
+      <!-- ── SUBTLE SCREEN GLASS EDGE HIGHLIGHT ── -->
+      <rect x="38" y="85" width="374" height="400" rx="12"
+            fill="none" stroke="rgba(255,255,255,0.07)" stroke-width="1.5"/>
+      <!-- Top-left screen reflection -->
+      <ellipse cx="128" cy="128" rx="58" ry="22"
+               fill="rgba(255,255,255,0.035)"
+               transform="rotate(-18 128 128)"/>
+    </svg>
+
+    <!-- ═══ GAME SCREEN (inside SVG screen hole) ═══ -->
+    <div class="tv-screen">
+
+    <!-- HEADER (hidden on welcome) -->
+    <div class="header" id="header" style="display:none">
+      <button class="header-home-btn" onclick="changeYear()" title="Return to start" style="display:flex;flex-direction:column;align-items:center;gap:2px"><span>🏠</span><span style="color:var(--gold);font-weight:600;font-size:clamp(11px,2.8cqw,14px);line-height:1;white-space:nowrap">Return to Start</span></button>
+      <div class="header-title">🏷️ Memory Lane Price Game</div>
+      <button class="tts-btn" id="tts-btn" onclick="readQuestion()" title="Read question aloud" style="display:none;flex-direction:column;align-items:center;gap:2px"><span>🔊</span><span style="color:var(--gold);font-weight:600;font-size:clamp(11px,2.8cqw,14px);line-height:1;white-space:nowrap">Read Aloud</span></button>
+      <div class="header-score" id="score-display">0 / 0</div>
+    </div>
+    <div class="progress-bar-wrap" id="progress-wrap" style="display:none">
+      <div class="progress-bar" id="progress-bar"></div>
+    </div>
+
+    <!-- SCREEN: LOADING -->
+    <div class="screen active" id="screen-loading">
+      <div class="loading-wrap">
+        <div class="spinner"></div>
+        <div class="loading-text">Loading Memory Lane…</div>
+      </div>
+    </div>
+
+    <!-- SCREEN: WELCOME -->
+    <div class="screen" id="screen-welcome">
+      <!-- Scrollable section -->
+      <div class="welcome-scroll">
+        <div class="welcome-logo" id="welcome-logo" style="font-size:clamp(32px,9cqw,44px);margin:2px 0">🏷️</div>
+        <div class="welcome-title">Memory Lane Price Game</div>
+
+        <!-- Normal mode content -->
+        <div id="normal-welcome">
+        <div class="welcome-sub">The 1960s — remember what a dollar used to buy?</div>
+        <button class="cg-corner-btn" onclick="cgTap()" title="Caregiver Settings (triple-tap)">
+          <span class="cg-icon">⚙</span>
+          <span><strong>Caregiver Settings</strong> — Tap 3 times to open</span>
+        </button>
+        <div class="birth-year-label" style="margin:6px 0 8px">What would you like to price?</div>
+        <div class="decade-grid" id="round-grid" style="grid-template-columns:repeat(3, 1fr); gap:8px">
+          <button class="decade-btn selected" data-cat="all" onclick="selectRound('all')" style="padding:12px 4px"><span class="decade-num" style="font-size:15px;line-height:1.15">🎲 Everything</span></button>
+          <button class="decade-btn" data-cat="grocery" onclick="selectRound('grocery')" style="padding:12px 4px"><span class="decade-num" style="font-size:15px;line-height:1.15">🛒 Groceries</span></button>
+          <button class="decade-btn" data-cat="meat" onclick="selectRound('meat')" style="padding:12px 4px"><span class="decade-num" style="font-size:15px;line-height:1.15">🥩 The Butcher</span></button>
+          <button class="decade-btn" data-cat="treat" onclick="selectRound('treat')" style="padding:12px 4px"><span class="decade-num" style="font-size:15px;line-height:1.15">🍬 Treats</span></button>
+          <button class="decade-btn" data-cat="dayout" onclick="selectRound('dayout')" style="padding:12px 4px"><span class="decade-num" style="font-size:15px;line-height:1.15">🎟️ A Day Out</span></button>
+          <button class="decade-btn" data-cat="bigticket" onclick="selectRound('bigticket')" style="padding:12px 4px"><span class="decade-num" style="font-size:15px;line-height:1.15">🚗 Big Buys</span></button>
+        </div>
+        <div style="color:rgba(255,248,231,0.55); font-size:12px; line-height:1.3; padding-top:6px">
+          Pick a round, or just tap Start for Everything
+        </div>
+        </div><!-- /normal-welcome -->
+
+        <!-- Gentle / Memory Care mode content -->
+        <div id="gentle-welcome" style="display:none; text-align:center; padding: 10px 0;">
+          <div style="font-size: clamp(50px,14cqw,72px); margin-bottom:8px">🌸</div>
+          <div style="color:var(--gold); font-size:clamp(16px,4.5cqw,22px); font-weight:bold; margin-bottom:6px">Picture Time</div>
+          <div style="color:var(--cream); font-size:clamp(14px,3.5cqw,17px); opacity:0.8; line-height:1.4">Simple picture questions.<br>Tap Start when ready!</div>
+          <button class="cg-corner-btn" style="margin:14px auto 0" onclick="cgTap()" title="Caregiver Settings (triple-tap)">
+            <span class="cg-icon">⚙</span>
+            <span><strong>Caregiver Settings</strong> — Tap 3 times to open</span>
+          </button>
+        </div>
+
+      </div><!-- /welcome-scroll -->
+
+      <!-- Start button always docked — never scrolls away -->
+      <div class="start-btn-dock">
+        <button class="big-btn" id="start-btn" onclick="startGame()" disabled>
+          Start Playing ▶
+        </button>
+        <div style="text-align:center;margin-top:6px">
+          <button onclick="openHelp()" style="background:none;border:none;color:rgba(255,248,231,0.5);font-size:clamp(11px,2.8cqw,13px);cursor:pointer;text-decoration:underline;font-family:inherit;touch-action:manipulation">❓ How to Play</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- SCREEN: QUESTION -->
+    <div class="screen" id="screen-question">
+      <!-- Top zone: question text (constrained height, no scroll) -->
+      <div class="q-top" id="q-top">
+        <div class="era-badge" id="era-badge">1957–1967</div>
+        <div class="question-number" id="q-number">Question 1 of 20</div>
+        <div class="question-category" id="q-category">🎵</div>
+        <div class="question-text" id="q-text">Loading question…</div>
+      </div>
+      <!-- Bottom zone: always-visible options, then post-answer content -->
+      <div class="q-bottom" id="q-scroll-area">
+        <div class="options-grid" id="options-grid">
+          <button class="option-btn" id="opt-0" onclick="answer(0)"><span class="option-letter">A</span><span id="opt-0-text"></span></button>
+          <button class="option-btn" id="opt-1" onclick="answer(1)"><span class="option-letter">B</span><span id="opt-1-text"></span></button>
+          <button class="option-btn" id="opt-2" onclick="answer(2)"><span class="option-letter">C</span><span id="opt-2-text"></span></button>
+          <button class="option-btn" id="opt-3" onclick="answer(3)"><span class="option-letter">D</span><span id="opt-3-text"></span></button>
+        </div>
+
+        <div class="fun-fact-box" id="fun-fact-box">
+          <div class="fun-fact-label">✨ Did You Know?</div>
+          <div class="fun-fact-text" id="fun-fact-text"></div>
+          <div class="source-text" id="source-text" style="margin-top:8px;font-size:13px;opacity:0.6;font-style:italic"></div>
+        </div>
+
+        <div id="cg-prompt-box"></div>
+
+        <div class="next-btn-dock" id="next-btn-wrap">
+          <button class="big-btn" onclick="nextQuestion()">Next Question →</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- SCREEN: RESULT -->
+    <div class="screen" id="screen-result">
+      <!-- Full result (Standard / Easy / Mixed) -->
+      <div id="result-full">
+        <div class="result-era-badge" id="result-era-badge">1960s Prices</div>
+        <div class="result-emoji" id="result-emoji">🏆</div>
+        <div class="result-title" id="result-title">Memory Champion!</div>
+        <div class="result-score-big">
+          <span class="result-score-num" id="result-score-num">16</span>
+          <span class="result-score-sep">/</span>
+          <span class="result-score-total" id="result-score-total">20</span>
+        </div>
+        <div class="result-stars" id="result-stars">⭐⭐⭐⭐⭐</div>
+        <div class="result-message" id="result-message">Incredible memory! The golden years are crystal clear in your mind.</div>
+      </div>
+      <!-- Simple result (Gentle / Memory Care) -->
+      <div id="result-simple" style="display:none; text-align:center">
+        <div class="result-simple-emoji" id="result-simple-emoji">🌸</div>
+        <div class="result-simple-title" id="result-simple-title">Wonderful Job!</div>
+        <div class="result-simple-msg" id="result-simple-msg">You did a great job today. Thank you for playing!</div>
+      </div>
+      <div class="result-buttons">
+        <button class="big-btn" onclick="playAgain()">Play Again 🔄</button>
+        <button class="big-btn btn-navy" onclick="changeYear()" id="result-change-yr">Choose a Round 🛒</button>
+      </div>
+    </div>
+
+    <!-- SCREEN: ERROR -->
+    <div class="screen" id="screen-error">
+      <div class="error-box">
+        <div class="error-title">⚠️ Oops!</div>
+        <div class="error-msg" id="error-msg">Could not load the price cards. Make sure all files are in the same folder as this game.</div>
+      </div>
+      <div style="margin-top:20px">
+        <button class="big-btn" onclick="location.reload()">Try Again</button>
+      </div>
+    </div>
+
+    </div><!-- /tv-screen -->
+
+  </div><!-- /tv-wrap -->
+</div><!-- /app -->
+
+<script>
+'use strict';
+
+// ─── VERSION ─────────────────────────────────────────────────────────────────
+    const APP_VERSION = '1.0.0';
+
+// ─── STATE ───────────────────────────────────────────────────────────────────
+let allQuestions = [];
+let gameQuestions = [];
+let currentIdx    = 0;
+let score         = 0;
+let answered      = false;
+let paused        = false;
+let birthYear     = '';
+let chosenCategory = 'all';   // price game: selected round
+let eraStart      = 0;
+let eraEnd        = 0;
+// ─── SAFE STORAGE (graceful fallback if localStorage unavailable) ─────────────
+const safeStorage = {
+  _mem: {},
+  getItem(k)    { try { return localStorage.getItem(k); }    catch(e) { return this._mem[k] ?? null; } },
+  setItem(k, v) { try { localStorage.setItem(k, v); }        catch(e) { this._mem[k] = String(v); } },
+  removeItem(k) { try { localStorage.removeItem(k); }        catch(e) { delete this._mem[k]; } }
+};
+
+let QUESTIONS_PER_GAME = parseInt(safeStorage.getItem('cg_count') || '10', 10);  // default 10 for seniors
+let CG_DIFF_MODE       = (function(){var d=safeStorage.getItem('cg_diff');return (d==='memory_care'||d==='standard')?d:'standard';})(); // price game: only Standard/Memory Care
+let CG_HIDE_SCORE      = safeStorage.getItem('cg_hide_score') === 'true';
+let CG_AUTO_READ       = safeStorage.getItem('cg_auto_read') === 'true';
+let CG_GENTLE_MODE     = false; // gentle picture mode removed for the price game
+let CG_GENTLE_COUNT    = parseInt(safeStorage.getItem('cg_gentle_count') || '10', 10);
+
+// ─── CATEGORY FILTER ──────────────────────────────────────────────────────────
+const CAT_GROUP_MAP = {
+  grocery:'grocery', meat:'meat', dairy:'dairy', produce:'produce', treat:'treat',
+  household:'household', dayout:'dayout', media:'media', toys:'toys', bigticket:'bigticket'
+};
+const ALL_CATEGORIES = Object.keys(CAT_GROUP_MAP);
+let CG_CATEGORIES = (function() {
+  try {
+    const saved = safeStorage.getItem('cg_categories');
+    return saved ? JSON.parse(saved) : [...ALL_CATEGORIES];
+  } catch(e) { return [...ALL_CATEGORIES]; }
+})();
+
+function setupPriceCategories() {
+  const sec = document.getElementById('cg-cat-section');
+  if (!sec) return;
+  const parts = sec.querySelectorAll(':scope > div');
+  if (parts[0]) parts[0].innerHTML = 'Price Categories <span style="font-weight:400;opacity:0.6;font-size:11px">(tap to include or leave out)</span>';
+  const grid = parts[1];
+  if (!grid) return;
+  grid.style.gridTemplateColumns = 'repeat(5,1fr)';
+  const cats = [['grocery','🛒','Grocery'],['meat','🥩','Meat'],['dairy','🥛','Dairy'],['produce','🍎','Produce'],['treat','🍬','Treats'],['dayout','🎟️','Day Out'],['media','🎵','Media'],['toys','🧸','Toys'],['household','🏠','Home'],['bigticket','🚗','Big Buys']];
+  grid.innerHTML = cats.map(function(x) {
+    return '<button id="cg-cat-' + x[0] + '" onclick="cgToggleCategory(\'' + x[0] + '\')" style="padding:8px 4px;border-radius:8px;border:2px solid transparent;background:rgba(255,255,255,0.1);color:#fff8e7;font-size:12px;cursor:pointer">' + x[1] + '<br>' + x[2] + '</button>';
+  }).join('');
+  // Remove "Gentle Pictures" mode: it renders emoji picture-matching, which price cards have
+  // no data for. Memory Care already covers the low-cognitive tier. Hide its button + length
+  // section, and tidy the difficulty grid to a clean 2x2 (Memory Care/Easy, Standard/Mixed).
+  ['gentle','easy','mixed'].forEach(function(m){ var b=document.getElementById('cg-btn-'+m); if(b) b.style.display='none'; });
+  var gl = document.getElementById('cg-gentle-10'); if (gl) { var s = gl.closest('div'); if (s && s.parentElement) s.parentElement.style.display = 'none'; }
+  cgRefreshUI();
+}
+
+function cgToggleCategory(cat) {
+  const idx = CG_CATEGORIES.indexOf(cat);
+  if (idx === -1) {
+    CG_CATEGORIES.push(cat);
+  } else {
+    // Always keep at least one category
+    if (CG_CATEGORIES.length > 1) CG_CATEGORIES.splice(idx, 1);
+  }
+  safeStorage.setItem('cg_categories', JSON.stringify(CG_CATEGORIES));
+  cgRefreshUI();
+}
+
+// ─── CONVERSATION PROMPTS ─────────────────────────────────────────────────────
+let CG_PROMPTS = safeStorage.getItem('cg_prompts') !== 'false';  // default ON
+
+const CG_PROMPT_POOLS = {
+  music:        ["What song reminds you most of your youth?", "Did you ever see a live concert?", "What was your favourite dance when you were young?"],
+  television:   ["What TV show did your family watch together?", "Did you have a favourite TV character?", "What time did your family sit down to watch TV?"],
+  movies:       ["What is your favourite film of all time?", "Did you ever go to a drive-in cinema?", "Who was your favourite movie star?"],
+  sports:       ["Did you play any sports growing up?", "Did you have a favourite team?", "What sporting event do you remember most?"],
+  world_events: ["Where were you when something big happened in the news?", "What world event stands out most in your memory?", "How did your community come together during hard times?"],
+  pop_culture:  ["What was the most popular thing when you were a teenager?", "What fad or fashion do you remember most?", "What did your friends talk about back then?"]
+};
+
+function getConversationPrompt(category) {
+  if (!CG_PROMPTS) return null;
+  const pool = CG_PROMPT_POOLS[category] || CG_PROMPT_POOLS['pop_culture'];
+  return pool[Math.floor(Math.random() * pool.length)];
+}
+
+function cgSetPrompts(on) {
+  CG_PROMPTS = on;
+  safeStorage.setItem('cg_prompts', on);
+  cgRefreshUI();
+}
+function cgSetGentleCount(n) {
+  CG_GENTLE_COUNT = n;
+  safeStorage.setItem('cg_gentle_count', n);
+  cgRefreshUI();
+}
+
+// ─── GENTLE MODE QUESTIONS ────────────────────────────────────────────────────
+// Large emoji + word label, 2-choice, celebrate every answer, cap 10 questions
+const GENTLE_QUESTIONS = [
+  // FOOD
+  { emoji:'🍎', label:'Apple',      question:'Which one is the Apple?',      wrong:'🍌', wrongLabel:'Banana' },
+  { emoji:'🍌', label:'Banana',     question:'Which one is the Banana?',     wrong:'🍎', wrongLabel:'Apple' },
+  { emoji:'🍰', label:'Cake',       question:'Which one is the Cake?',       wrong:'🍞', wrongLabel:'Bread' },
+  { emoji:'🍞', label:'Bread',      question:'Which one is the Bread?',      wrong:'🍰', wrongLabel:'Cake' },
+  { emoji:'🍓', label:'Strawberry', question:'Which one is the Strawberry?', wrong:'🍇', wrongLabel:'Grapes' },
+  { emoji:'🍇', label:'Grapes',     question:'Which one is the Grapes?',     wrong:'🍓', wrongLabel:'Strawberry' },
+  { emoji:'☕', label:'Cup of Tea', question:'Which one is the Cup of Tea?', wrong:'🥛', wrongLabel:'Milk' },
+  { emoji:'🥛', label:'Milk',       question:'Which one is the Milk?',       wrong:'☕', wrongLabel:'Cup of Tea' },
+  { emoji:'🍊', label:'Orange',     question:'Which one is the Orange?',     wrong:'🍋', wrongLabel:'Lemon' },
+  { emoji:'🥕', label:'Carrot',     question:'Which one is the Carrot?',     wrong:'🥦', wrongLabel:'Broccoli' },
+  // ANIMALS
+  { emoji:'🐱', label:'Cat',        question:'Which one is the Cat?',        wrong:'🐶', wrongLabel:'Dog' },
+  { emoji:'🐶', label:'Dog',        question:'Which one is the Dog?',        wrong:'🐱', wrongLabel:'Cat' },
+  { emoji:'🐦', label:'Bird',       question:'Which one is the Bird?',       wrong:'🐠', wrongLabel:'Fish' },
+  { emoji:'🐠', label:'Fish',       question:'Which one is the Fish?',       wrong:'🐦', wrongLabel:'Bird' },
+  { emoji:'🐄', label:'Cow',        question:'Which one is the Cow?',        wrong:'🐑', wrongLabel:'Sheep' },
+  { emoji:'🐑', label:'Sheep',      question:'Which one is the Sheep?',      wrong:'🐄', wrongLabel:'Cow' },
+  { emoji:'🦋', label:'Butterfly',  question:'Which one is the Butterfly?',  wrong:'🐝', wrongLabel:'Bee' },
+  { emoji:'🐝', label:'Bee',        question:'Which one is the Bee?',        wrong:'🦋', wrongLabel:'Butterfly' },
+  { emoji:'🐇', label:'Rabbit',     question:'Which one is the Rabbit?',     wrong:'🐿️', wrongLabel:'Squirrel' },
+  { emoji:'🦆', label:'Duck',       question:'Which one is the Duck?',       wrong:'🐧', wrongLabel:'Penguin' },
+  // NATURE & OUTDOORS
+  { emoji:'🌸', label:'Flower',     question:'Which one is the Flower?',     wrong:'🌿', wrongLabel:'Leaf' },
+  { emoji:'🌿', label:'Leaf',       question:'Which one is the Leaf?',       wrong:'🌸', wrongLabel:'Flower' },
+  { emoji:'☀️', label:'Sun',        question:'Which one is the Sun?',        wrong:'🌙', wrongLabel:'Moon' },
+  { emoji:'🌙', label:'Moon',       question:'Which one is the Moon?',       wrong:'☀️', wrongLabel:'Sun' },
+  { emoji:'⭐', label:'Star',       question:'Which one is the Star?',       wrong:'🌙', wrongLabel:'Moon' },
+  { emoji:'🌈', label:'Rainbow',    question:'Which one is the Rainbow?',    wrong:'⛅', wrongLabel:'Cloud' },
+  { emoji:'⛅', label:'Cloud',      question:'Which one is the Cloud?',      wrong:'🌈', wrongLabel:'Rainbow' },
+  { emoji:'🌊', label:'Ocean',      question:'Which one is the Ocean?',      wrong:'🏔️', wrongLabel:'Mountain' },
+  { emoji:'🏔️', label:'Mountain',  question:'Which one is the Mountain?',   wrong:'🌊', wrongLabel:'Ocean' },
+  { emoji:'🌳', label:'Tree',       question:'Which one is the Tree?',       wrong:'🌻', wrongLabel:'Sunflower' },
+  // HOME & EVERYDAY
+  { emoji:'🏠', label:'House',      question:'Which one is the House?',      wrong:'🚗', wrongLabel:'Car' },
+  { emoji:'🚗', label:'Car',        question:'Which one is the Car?',        wrong:'🚌', wrongLabel:'Bus' },
+  { emoji:'🚌', label:'Bus',        question:'Which one is the Bus?',        wrong:'🚗', wrongLabel:'Car' },
+  { emoji:'📞', label:'Telephone',  question:'Which one is the Telephone?',  wrong:'📻', wrongLabel:'Radio' },
+  { emoji:'📻', label:'Radio',      question:'Which one is the Radio?',      wrong:'📞', wrongLabel:'Telephone' },
+  { emoji:'📺', label:'Television', question:'Which one is the Television?', wrong:'📻', wrongLabel:'Radio' },
+  { emoji:'🛏️', label:'Bed',       question:'Which one is the Bed?',        wrong:'🛋️', wrongLabel:'Sofa' },
+  { emoji:'🛋️', label:'Sofa',      question:'Which one is the Sofa?',       wrong:'🛏️', wrongLabel:'Bed' },
+  { emoji:'🪑', label:'Chair',      question:'Which one is the Chair?',      wrong:'🛋️', wrongLabel:'Sofa' },
+  { emoji:'🕯️', label:'Candle',    question:'Which one is the Candle?',     wrong:'💡', wrongLabel:'Light Bulb' },
+  // MUSIC & FUN
+  { emoji:'🎵', label:'Music',      question:'Which one is Music?',          wrong:'🎨', wrongLabel:'Painting' },
+  { emoji:'🎸', label:'Guitar',     question:'Which one is the Guitar?',     wrong:'🎹', wrongLabel:'Piano' },
+  { emoji:'🎹', label:'Piano',      question:'Which one is the Piano?',      wrong:'🎸', wrongLabel:'Guitar' },
+  { emoji:'🎩', label:'Hat',        question:'Which one is the Hat?',        wrong:'👒', wrongLabel:'Bonnet' },
+  { emoji:'👒', label:'Bonnet',     question:'Which one is the Bonnet?',     wrong:'🎩', wrongLabel:'Hat' },
+  { emoji:'🎈', label:'Balloon',    question:'Which one is the Balloon?',    wrong:'🎁', wrongLabel:'Gift' },
+  { emoji:'🎁', label:'Gift',       question:'Which one is the Gift?',       wrong:'🎈', wrongLabel:'Balloon' },
+  { emoji:'⚽', label:'Football',   question:'Which one is the Football?',   wrong:'🎾', wrongLabel:'Tennis Ball' },
+  { emoji:'🎾', label:'Tennis Ball',question:'Which one is the Tennis Ball?',wrong:'⚽', wrongLabel:'Football' },
+  // CLOTHING & COLOURS
+  { emoji:'👗', label:'Dress',      question:'Which one is the Dress?',      wrong:'👔', wrongLabel:'Shirt' },
+  { emoji:'👔', label:'Shirt',      question:'Which one is the Shirt?',      wrong:'👗', wrongLabel:'Dress' },
+  { emoji:'👠', label:'Shoe',       question:'Which one is the Shoe?',       wrong:'🧤', wrongLabel:'Glove' },
+  { emoji:'🧤', label:'Glove',      question:'Which one is the Glove?',      wrong:'🧣', wrongLabel:'Scarf' },
+  { emoji:'🧣', label:'Scarf',      question:'Which one is the Scarf?',      wrong:'🎩', wrongLabel:'Hat' },
+  { emoji:'❤️', label:'Heart',      question:'Which one is the Heart?',      wrong:'⭐', wrongLabel:'Star' },
+  { emoji:'💛', label:'Yellow',     question:'Which colour is Yellow?',      wrong:'💙', wrongLabel:'Blue' },
+  { emoji:'💙', label:'Blue',       question:'Which colour is Blue?',        wrong:'💛', wrongLabel:'Yellow' },
+  { emoji:'💚', label:'Green',      question:'Which colour is Green?',       wrong:'❤️', wrongLabel:'Red' },
+  { emoji:'🌺', label:'Rose',       question:'Which one is the Rose?',       wrong:'🌻', wrongLabel:'Sunflower' },
+  { emoji:'🌻', label:'Sunflower',  question:'Which one is the Sunflower?',  wrong:'🌺', wrongLabel:'Rose' },
+  // NUMBERS & SHAPES
+  { emoji:'1️⃣', label:'Number One',  question:'Which one is Number One?',    wrong:'2️⃣', wrongLabel:'Number Two' },
+  { emoji:'2️⃣', label:'Number Two',  question:'Which one is Number Two?',    wrong:'3️⃣', wrongLabel:'Number Three' },
+  { emoji:'3️⃣', label:'Number Three',question:'Which one is Number Three?',  wrong:'1️⃣', wrongLabel:'Number One' },
+  { emoji:'🔴', label:'Circle',      question:'Which one is the Circle?',    wrong:'🟦', wrongLabel:'Square' },
+  { emoji:'🟦', label:'Square',      question:'Which one is the Square?',    wrong:'🔴', wrongLabel:'Circle' },
+  { emoji:'🔺', label:'Triangle',    question:'Which one is the Triangle?',  wrong:'🟦', wrongLabel:'Square' },
+  // SEASONS & WEATHER
+  { emoji:'🌸', label:'Spring',      question:'Which picture shows Spring?', wrong:'❄️', wrongLabel:'Winter' },
+  { emoji:'☀️', label:'Summer',      question:'Which picture shows Summer?', wrong:'🍂', wrongLabel:'Autumn' },
+  { emoji:'🍂', label:'Autumn',      question:'Which picture shows Autumn?', wrong:'🌸', wrongLabel:'Spring' },
+  { emoji:'❄️', label:'Winter',      question:'Which picture shows Winter?', wrong:'☀️', wrongLabel:'Summer' },
+  { emoji:'🌧️', label:'Rain',        question:'Which one shows Rain?',       wrong:'☀️', wrongLabel:'Sunshine' },
+  { emoji:'🌨️', label:'Snow',        question:'Which one shows Snow?',       wrong:'🌧️', wrongLabel:'Rain' },
+  // FOOD & DRINK (extra)
+  { emoji:'🍵', label:'Cup of Tea',  question:'Which one is the Cup of Tea?',wrong:'☕', wrongLabel:'Coffee' },
+  { emoji:'🍰', label:'Cake',        question:'Which one is the Cake?',      wrong:'🍩', wrongLabel:'Doughnut' },
+  { emoji:'🍩', label:'Doughnut',    question:'Which one is the Doughnut?',  wrong:'🍰', wrongLabel:'Cake' },
+  { emoji:'🥚', label:'Egg',         question:'Which one is the Egg?',       wrong:'🧀', wrongLabel:'Cheese' },
+  { emoji:'🧀', label:'Cheese',      question:'Which one is the Cheese?',    wrong:'🥚', wrongLabel:'Egg' },
+  { emoji:'🍦', label:'Ice Cream',   question:'Which one is the Ice Cream?', wrong:'🍰', wrongLabel:'Cake' },
+  { emoji:'🍷', label:'Wine Glass',  question:'Which one is the Wine Glass?',wrong:'🍺', wrongLabel:'Beer' },
+  // PLACES & TRANSPORT
+  { emoji:'✈️', label:'Aeroplane',   question:'Which one is the Aeroplane?', wrong:'🚂', wrongLabel:'Train' },
+  { emoji:'🚂', label:'Train',       question:'Which one is the Train?',     wrong:'✈️', wrongLabel:'Aeroplane' },
+  { emoji:'⛵', label:'Boat',        question:'Which one is the Boat?',      wrong:'🚗', wrongLabel:'Car' },
+  { emoji:'🏖️', label:'Beach',       question:'Which one shows a Beach?',    wrong:'🏔️', wrongLabel:'Mountain' },
+  { emoji:'🌆', label:'City',        question:'Which one shows a City?',     wrong:'🌳', wrongLabel:'Forest' },
+  { emoji:'⛪', label:'Church',      question:'Which one is the Church?',    wrong:'🏠', wrongLabel:'House' },
+  // ACTIVITIES & HOBBIES
+  { emoji:'📖', label:'Book',        question:'Which one is the Book?',      wrong:'📰', wrongLabel:'Newspaper' },
+  { emoji:'📰', label:'Newspaper',   question:'Which one is the Newspaper?', wrong:'📖', wrongLabel:'Book' },
+  { emoji:'✂️', label:'Scissors',    question:'Which one is the Scissors?',  wrong:'🖊️', wrongLabel:'Pen' },
+  { emoji:'🖊️', label:'Pen',         question:'Which one is the Pen?',       wrong:'✂️', wrongLabel:'Scissors' },
+  { emoji:'🧵', label:'Needle & Thread', question:'Which one is the Needle & Thread?', wrong:'🧶', wrongLabel:'Ball of Wool' },
+  { emoji:'🧶', label:'Ball of Wool',question:'Which one is the Ball of Wool?', wrong:'🧵', wrongLabel:'Needle & Thread' },
+  { emoji:'🌱', label:'Plant',       question:'Which one is the Plant?',     wrong:'🌸', wrongLabel:'Flower' },
+  { emoji:'🔑', label:'Key',         question:'Which one is the Key?',       wrong:'🔒', wrongLabel:'Lock' },
+  { emoji:'🔒', label:'Lock',        question:'Which one is the Lock?',      wrong:'🔑', wrongLabel:'Key' },
+  { emoji:'🕐', label:'Clock',       question:'Which one is the Clock?',     wrong:'📅', wrongLabel:'Calendar' },
+  { emoji:'📅', label:'Calendar',    question:'Which one is the Calendar?',  wrong:'🕐', wrongLabel:'Clock' },
+];
+
+const GENTLE_PRAISE = [
+  "Wonderful! 🌸", "Well done! 🌟", "That's right! ⭐",
+  "Lovely! 💛",    "Beautiful! 🌈", "Excellent! 🎉",
+  "Fantastic! 🌺", "Brilliant! ✨",  "Amazing! 🌸",
+  "Perfect! 💛"
+];
+
+function cgSetGentleMode(on) {
+  CG_GENTLE_MODE = on;
+  safeStorage.setItem('cg_gentle_mode', on);
+  applyGentleWelcome();
+  cgRefreshUI();
+}
+
+// ─── CAREGIVER PANEL ─────────────────────────────────────────────────────────
+let _cgTapTimer = null, _cgTapCount = 0;
+function cgTap() {
+  _cgTapCount++;
+  clearTimeout(_cgTapTimer);
+  if (_cgTapCount >= 3) { _cgTapCount = 0; cgOpen(); return; }
+  _cgTapTimer = setTimeout(() => { _cgTapCount = 0; }, 1000);
+}
+function cgOpen() {
+  const m = document.getElementById('cg-modal');
+  m.style.display = 'flex';
+  setupPriceCategories();
+  cgRefreshUI();
+}
+function cgClose() {
+  document.getElementById('cg-modal').style.display = 'none';
+  applyGentleWelcome();  // re-apply welcome state after settings change
+}
+function cgSetDiff(mode) {
+  if (mode === 'gentle') {
+    CG_GENTLE_MODE = true;
+    safeStorage.setItem('cg_gentle_mode', 'true');
+    CG_DIFF_MODE = 'gentle';
+    safeStorage.setItem('cg_diff', 'gentle');
+    // Auto-hide score for Gentle mode
+    CG_HIDE_SCORE = true;
+    safeStorage.setItem('cg_hide_score', 'true');
+    applyGentleWelcome();
+    cgRefreshUI();
+    return;
+  }
+  // Any other difficulty clears Gentle Mode
+  CG_GENTLE_MODE = false;
+  safeStorage.setItem('cg_gentle_mode', 'false');
+  CG_DIFF_MODE = mode;
+  safeStorage.setItem('cg_diff', mode);
+  // Auto-hide score for Memory Care
+  if (mode === 'memory_care') {
+    CG_HIDE_SCORE = true;
+    safeStorage.setItem('cg_hide_score', 'true');
+  }
+  applyGentleWelcome();
+  cgRefreshUI();
+  // Hide category toggles for Memory Care & Gentle (categories don't apply)
+  const catSection = document.getElementById('cg-cat-section');
+  if (catSection) {
+    catSection.style.display = (mode === 'memory_care' || mode === 'gentle') ? 'none' : '';
+  }
+}
+function cgSetCount(n) {
+  QUESTIONS_PER_GAME = n;
+  safeStorage.setItem('cg_count', n);
+  cgRefreshUI();
+}
+function cgSetScore(hide) {
+  CG_HIDE_SCORE = hide;
+  safeStorage.setItem('cg_hide_score', hide);
+  const el = document.getElementById('score-display');
+  if (el) el.style.display = hide ? 'none' : '';
+  cgRefreshUI();
+}
+function cgSetAutoRead(on) {
+  CG_AUTO_READ = on;
+  safeStorage.setItem('cg_auto_read', on);
+  const btn = document.getElementById('tts-btn');
+  if (btn) btn.style.display = on ? '' : 'none';
+  cgRefreshUI();
+}
+function applyGentleWelcome() {
+  const normalDiv = document.getElementById('normal-welcome');
+  const gentleDiv = document.getElementById('gentle-welcome');
+  const startBtn  = document.getElementById('start-btn');
+  if (CG_GENTLE_MODE || CG_DIFF_MODE === 'memory_care') {
+    if (normalDiv) normalDiv.style.display = 'none';
+    if (gentleDiv) {
+      gentleDiv.style.display = '';
+      const title = gentleDiv.querySelector('div:nth-child(2)');
+      const sub   = gentleDiv.querySelector('div:nth-child(3)');
+      if (CG_GENTLE_MODE) {
+        if (title) title.textContent = 'Picture Time';
+        if (sub)   sub.innerHTML = 'Simple picture questions.<br>Tap Start when ready!';
+      } else {
+        if (title) title.textContent = 'Memory Care Mode';
+        if (sub)   sub.innerHTML = 'Simple questions from the golden years.<br>Tap Start when ready!';
+      }
+    }
+    if (startBtn)  { startBtn.disabled = false; startBtn.removeAttribute('disabled'); startBtn.style.opacity = ''; startBtn.style.pointerEvents = ''; }
+  } else {
+    if (normalDiv) normalDiv.style.display = '';
+    if (gentleDiv) gentleDiv.style.display = 'none';
+    if (startBtn)  startBtn.disabled = false;   // a round is always preselected
+  }
+}
+
+function cgRefreshUI() {
+  const gold = '2px solid #FF9E42', off = '2px solid transparent';
+  ['memory_care','easy','standard','mixed','gentle'].forEach(d => {
+    const b = document.getElementById('cg-btn-' + d);
+    if (b) b.style.border = d === CG_DIFF_MODE ? gold : off;
+  });
+  [10,20,30].forEach(n => {
+    const b = document.getElementById('cg-btn-' + n);
+    if (b) b.style.border = n === QUESTIONS_PER_GAME ? gold : off;
+  });
+  const sh = document.getElementById('cg-btn-score-hide');
+  const ss = document.getElementById('cg-btn-score-show');
+  if (sh) sh.style.border = CG_HIDE_SCORE  ? gold : off;
+  if (ss) ss.style.border = !CG_HIDE_SCORE ? gold : off;
+
+  const ro = document.getElementById('cg-btn-read-off');
+  const ra = document.getElementById('cg-btn-read-auto');
+  if (ro) ro.style.border = !CG_AUTO_READ ? gold : off;
+  if (ra) ra.style.border = CG_AUTO_READ  ? gold : off;
+
+  // Gentle session length
+  [10,15,20].forEach(n => {
+    const b = document.getElementById('cg-gentle-' + n);
+    if (b) b.style.border = n === CG_GENTLE_COUNT ? gold : off;
+  });
+
+  // Prompts
+  const po = document.getElementById('cg-btn-prompts-off');
+  const pa = document.getElementById('cg-btn-prompts-on');
+  if (po) po.style.border = !CG_PROMPTS ? gold : off;
+  if (pa) pa.style.border = CG_PROMPTS  ? gold : off;
+
+  // Category tiles — gold border = active, no border = inactive (no opacity change)
+  ALL_CATEGORIES.forEach(cat => {
+    const b = document.getElementById('cg-cat-' + cat);
+    if (!b) return;
+    const active = CG_CATEGORIES.includes(cat);
+    b.style.border     = active ? gold : off;
+    b.style.background = active ? 'rgba(255,215,0,0.12)' : 'rgba(255,255,255,0.1)';
+  });
+
+  // Hide category section for modes where it has no effect
+  const catSection = document.getElementById('cg-cat-section');
+  if (catSection) {
+    catSection.style.display = (CG_DIFF_MODE === 'memory_care' || CG_DIFF_MODE === 'gentle') ? 'none' : '';
+  }
+}
+
+// ─── DECADE SELECTOR ─────────────────────────────────────────────────────────
+function selectRound(cat) {
+  chosenCategory = cat;
+  document.querySelectorAll('.decade-btn').forEach(btn => {
+    btn.classList.toggle('selected', btn.dataset.cat === cat);
+  });
+  const sb = document.getElementById('start-btn');
+  if (sb) sb.disabled = false;
+}
+function selectDecade(y) { selectRound('all'); }   // legacy alias
+
+// ─── TEXT-TO-SPEECH ───────────────────────────────────────────────────────────
+function ttsRead(text) {
+  if (!window.speechSynthesis) return;
+  window.speechSynthesis.cancel();
+  const utt = new SpeechSynthesisUtterance(text);
+  utt.rate  = 0.82;   // slightly slower — easier for elderly listeners
+  utt.pitch = 1.0;
+  const btn = document.getElementById('tts-btn');
+  if (btn) btn.classList.add('speaking');
+  utt.onend = utt.onerror = () => { if (btn) btn.classList.remove('speaking'); };
+  window.speechSynthesis.speak(utt);
+}
+function readQuestion() {
+  const q = gameQuestions[currentIdx];
+  if (!q) return;
+  const labels = ['A','B','C','D'];
+  const opts = q.options.map((o, i) => `${labels[i]}. ${o}`).join('. ');
+  ttsRead(`${q.question}. ${opts}`);
+}
+
+// ─── AUDIO (Web Audio API) ────────────────────────────────────────────────────
+let audioCtx = null;
+
+function unlockAudio() {
+  try {
+    if (!audioCtx) {
+      audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    }
+    if (audioCtx && audioCtx.state === 'suspended') audioCtx.resume();
+  } catch(e) { audioCtx = null; }
+}
+
+// Play a bright ascending chord — modern quiz-show correct sound
+function playDing() {
+  unlockAudio();
+  if (!audioCtx) return;
+  try {
+    const now = audioCtx.currentTime;
+    // Three-note ascending chord: C5 → E5 → G5 with a warm triangle wave
+    [[523.25, 0], [659.25, 0.08], [783.99, 0.16]].forEach(([freq, delay]) => {
+      const o = audioCtx.createOscillator();
+      const g = audioCtx.createGain();
+      o.connect(g); g.connect(audioCtx.destination);
+      o.type = 'triangle';
+      o.frequency.value = freq;
+      g.gain.setValueAtTime(0, now + delay);
+      g.gain.linearRampToValueAtTime(0.32, now + delay + 0.02);
+      g.gain.exponentialRampToValueAtTime(0.001, now + delay + 0.55);
+      o.start(now + delay);
+      o.stop(now + delay + 0.6);
+    });
+    // Soft shimmer overtone
+    const sh = audioCtx.createOscillator();
+    const sg = audioCtx.createGain();
+    sh.connect(sg); sg.connect(audioCtx.destination);
+    sh.type = 'sine'; sh.frequency.value = 1567.98; // G6
+    sg.gain.setValueAtTime(0.08, now + 0.2);
+    sg.gain.exponentialRampToValueAtTime(0.001, now + 0.7);
+    sh.start(now + 0.2); sh.stop(now + 0.75);
+  } catch(e) {}
+}
+
+// Play a soft descending woomp — modern wrong-answer sound
+function playBuzz() {
+  unlockAudio();
+  if (!audioCtx) return;
+  try {
+    const now = audioCtx.currentTime;
+    const o = audioCtx.createOscillator();
+    const g = audioCtx.createGain();
+    o.connect(g); g.connect(audioCtx.destination);
+    o.type = 'sine';
+    o.frequency.setValueAtTime(320, now);
+    o.frequency.exponentialRampToValueAtTime(110, now + 0.4);
+    g.gain.setValueAtTime(0.35, now);
+    g.gain.exponentialRampToValueAtTime(0.001, now + 0.5);
+    o.start(now); o.stop(now + 0.52);
+    // Low thud layer
+    const o2 = audioCtx.createOscillator();
+    const g2 = audioCtx.createGain();
+    o2.connect(g2); g2.connect(audioCtx.destination);
+    o2.type = 'triangle'; o2.frequency.value = 80;
+    g2.gain.setValueAtTime(0.2, now);
+    g2.gain.exponentialRampToValueAtTime(0.001, now + 0.3);
+    o2.start(now); o2.stop(now + 0.32);
+  } catch(e) {}
+}
+
+// ─── CONFETTI ─────────────────────────────────────────────────────────────────
+const canvas = document.getElementById('confetti-canvas');
+const ctx = canvas.getContext('2d');
+let particles = [];
+let confettiRunning = false;
+const COLORS = ['#FFD700','#FF6B6B','#4ECDC4','#45B7D1','#FFA07A','#98D8C8','#F7DC6F'];
+
+function launchConfetti() {
+  canvas.width = window.innerWidth;
+  canvas.height = window.innerHeight;
+  // Add to existing particles (supports multiple bursts)
+  for (let i = 0; i < 130; i++) {
+    particles.push({
+      x: Math.random() * canvas.width,
+      y: Math.random() * canvas.height * 0.4 - canvas.height * 0.4,
+      w: Math.random() * 12 + 6,
+      h: Math.random() * 6 + 3,
+      color: COLORS[Math.floor(Math.random() * COLORS.length)],
+      vx: (Math.random() - 0.5) * 3,
+      vy: Math.random() * 3.5 + 1.5,
+      angle: Math.random() * Math.PI * 2,
+      spin: (Math.random() - 0.5) * 0.18,
+      opacity: 1
+    });
+  }
+  canvas.classList.add('show');
+  confettiRunning = true;
+  if (!_confettiAnimating) animateConfetti();
+  clearTimeout(_confettiTimer);
+  _confettiTimer = setTimeout(() => {
+    canvas.classList.remove('show');
+    confettiRunning = false;
+    particles = [];
+  }, 5000);
+}
+let _confettiAnimating = false, _confettiTimer = null;
+
+function animateConfetti() {
+  if (!confettiRunning && particles.length === 0) { _confettiAnimating = false; return; }
+  _confettiAnimating = true;
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+  let alive = false;
+  for (const p of particles) {
+    p.x += p.vx; p.y += p.vy; p.angle += p.spin;
+    // Fade out near bottom
+    if (p.y > canvas.height * 0.8) p.opacity = Math.max(0, p.opacity - 0.02);
+    ctx.save();
+    ctx.globalAlpha = p.opacity ?? 1;
+    ctx.translate(p.x, p.y);
+    ctx.rotate(p.angle);
+    ctx.fillStyle = p.color;
+    ctx.fillRect(-p.w/2, -p.h/2, p.w, p.h);
+    ctx.restore();
+    if (p.y < canvas.height + 20 && p.opacity > 0) alive = true;
+  }
+  if (alive || confettiRunning) requestAnimationFrame(animateConfetti);
+  else { _confettiAnimating = false; }
+}
+
+// ─── BIRTH YEAR INPUT ─────────────────────────────────────────────────────────
+function numPress(d) {
+  if (birthYear.length >= 4) return;
+  birthYear += d;
+  updateYearDisplay();
+}
+
+function clearYear() {
+  birthYear = birthYear.slice(0, -1);
+  updateYearDisplay();
+}
+
+function updateYearDisplay() { /* price game: no birth-year entry */ }
+
+// Keyboard support — let users type their year on a physical keyboard
+document.addEventListener('keydown', function(e) {
+  const screen = document.getElementById('screen-welcome');
+  if (!screen || !screen.classList.contains('active')) return;
+  if (e.key >= '0' && e.key <= '9') { numPress(e.key); }
+  else if (e.key === 'Backspace' || e.key === 'Delete') { clearYear(); }
+  else if (e.key === 'Enter') {
+    const btn = document.getElementById('start-btn');
+    if (!btn.disabled) startGame();
+  }
+});
+
+// --- INLINE PRICE DATABASE ---
+// Auto-generated by build_price_html.py -- do not edit by hand
+const INLINE_QUESTIONS = [{"id":"price_1961_bread","year":1961,"category":"grocery","item":"A loaf of white bread","unit":"per 1-lb loaf","question":"In 1961, how much did a loaf of white bread cost?","options":["12¢","45¢","21¢"],"answer":2,"real_price":"21¢","fun_fact":"The U.S. average was about 21¢ a loaf in 1961.","reminiscence":"Did your mother bake bread or buy it? What did fresh bread smell like in your kitchen?","source":"BLS Retail Prices of Food, 1961","difficulty":"standard"},{"id":"price_1961_milk","year":1961,"category":"dairy","item":"A quart of milk","unit":"fresh, delivered","question":"In 1961, how much did a quart of milk cost?","options":["26¢","15¢","49¢"],"answer":0,"real_price":"26¢","fun_fact":"Milk ran about 26¢ a quart delivered in 1961 — a half-gallon was around 52¢.","reminiscence":"Was your milk delivered to the door? Do you remember the milkman and the clink of the bottles?","source":"BLS Retail Prices of Food, 1961","difficulty":"memory_care"},{"id":"price_1961_eggs","year":1961,"category":"dairy","item":"A dozen eggs","unit":"Grade A, large","question":"In 1961, how much did a dozen eggs cost?","options":["57¢","95¢","29¢"],"answer":0,"real_price":"57¢","fun_fact":"A dozen large eggs averaged about 57¢ in 1961.","reminiscence":"Did your family keep chickens, or buy eggs at the store? Who did the grocery shopping in your house?","source":"BLS Retail Prices of Food, 1961","difficulty":"standard"},{"id":"price_1961_butter","year":1961,"category":"dairy","item":"A pound of butter","unit":"per lb","question":"In 1961, how much did a pound of butter cost?","options":["$0.76","$1.29","$0.39"],"answer":0,"real_price":"$0.76","fun_fact":"Butter was about $0.76 a pound in 1961.","reminiscence":"Butter or margarine in your house? Some families had strong opinions about that!","source":"BLS Retail Prices of Food, 1961","difficulty":"standard"},{"id":"price_1961_coffee","year":1961,"category":"grocery","item":"A one-pound can of coffee","unit":"per 1-lb can","question":"In 1961, how much did a one-pound can of coffee cost?","options":["$0.39","$1.19","$0.74"],"answer":2,"real_price":"$0.74","fun_fact":"A pound of coffee ran about $0.74 in 1961 (it was 75¢ back in 1960).","reminiscence":"How did your family take their coffee? Was there a percolator bubbling on the stove every morning?","source":"BLS Retail Prices of Food, 1961","difficulty":"standard"},{"id":"price_1961_sugar","year":1961,"category":"grocery","item":"A five-pound bag of sugar","unit":"5 lb","question":"In 1961, how much did a five-pound bag of sugar cost?","options":["98¢","29¢","59¢"],"answer":2,"real_price":"59¢","fun_fact":"Five pounds of sugar was about 59¢ in 1961.","reminiscence":"What did your family love to bake? Was there a special recipe everyone waited for?","source":"BLS Retail Prices of Food, 1961","difficulty":"standard"},{"id":"price_1961_flour","year":1961,"category":"grocery","item":"A five-pound bag of flour","unit":"5 lb","question":"In 1961, how much did a five-pound bag of flour cost?","options":["99¢","25¢","56¢"],"answer":2,"real_price":"56¢","fun_fact":"Five pounds of flour cost about 56¢ in 1961.","reminiscence":"Who was the baker in your family? Did you help in the kitchen as a child?","source":"BLS Retail Prices of Food, 1961","difficulty":"standard"},{"id":"price_1961_groundbeef","year":1961,"category":"meat","item":"A pound of ground beef","unit":"hamburger, per lb","question":"In 1961, how much did a pound of ground beef cost?","options":["51¢","89¢","25¢"],"answer":0,"real_price":"51¢","fun_fact":"Ground beef (hamburger) was about 51¢ a pound in 1961.","reminiscence":"What was a typical supper at your house? Did Sunday dinner look different from a weeknight?","source":"BLS Retail Prices of Food, 1961","difficulty":"standard"},{"id":"price_1961_roundsteak","year":1961,"category":"meat","item":"A pound of round steak","unit":"per lb","question":"In 1961, how much did a pound of round steak cost?","options":["$1.04","$1.89","$0.59"],"answer":0,"real_price":"$1.04","fun_fact":"Round steak averaged about $1.04 a pound in 1961.","reminiscence":"Was steak a special-occasion meal in your home? What made a meal feel fancy back then?","source":"BLS Retail Prices of Food, 1961","difficulty":"standard"},{"id":"price_1961_bacon","year":1961,"category":"meat","item":"A pound of sliced bacon","unit":"per lb","question":"In 1961, how much did a pound of sliced bacon cost?","options":["$1.19","$0.71","$0.39"],"answer":1,"real_price":"$0.71","fun_fact":"Sliced bacon was about $0.71 a pound in 1961.","reminiscence":"Who made breakfast in your family? Do you remember the sound of bacon in the pan on a weekend morning?","source":"BLS Retail Prices of Food, 1961","difficulty":"standard"},{"id":"price_1961_chicken","year":1961,"category":"meat","item":"A pound of chicken","unit":"frying chicken, per lb","question":"In 1961, how much did a pound of chicken cost?","options":["19¢","79¢","39¢"],"answer":2,"real_price":"39¢","fun_fact":"A whole frying chicken was about 39¢ a pound in 1961.","reminiscence":"Was fried chicken a Sunday tradition? Who made the best in your family?","source":"BLS Retail Prices of Food, 1961","difficulty":"standard"},{"id":"price_1961_potatoes","year":1961,"category":"produce","item":"A ten-pound bag of potatoes","unit":"10 lb","question":"In 1961, how much did a ten-pound bag of potatoes cost?","options":["$0.29","$1.19","$0.63"],"answer":2,"real_price":"$0.63","fun_fact":"Ten pounds of potatoes cost about $0.63 in 1961.","reminiscence":"Potatoes were on a lot of dinner tables. How did your family like them — mashed, fried, or boiled?","source":"BLS Retail Prices of Food, 1961","difficulty":"standard"},{"id":"price_1961_bananas","year":1961,"category":"produce","item":"A pound of bananas","unit":"per lb","question":"In 1961, how much did a pound of bananas cost?","options":["39¢","8¢","16¢"],"answer":2,"real_price":"16¢","fun_fact":"Bananas were about 16¢ a pound in 1961.","reminiscence":"Was fruit a treat or an everyday thing when you were young? What was your favorite?","source":"BLS Retail Prices of Food, 1961","difficulty":"memory_care"},{"id":"price_1961_oranges","year":1961,"category":"produce","item":"A dozen oranges","unit":"size 200, per dozen","question":"In 1961, how much did a dozen oranges cost?","options":["$0.35","$1.29","$0.78"],"answer":2,"real_price":"$0.78","fun_fact":"A dozen oranges averaged about $0.78 in 1961.","reminiscence":"Did you ever get an orange in your Christmas stocking? That was a special treat for many families.","source":"BLS Retail Prices of Food, 1961","difficulty":"standard"},{"id":"price_1961_tomatosoup","year":1961,"category":"grocery","item":"A can of tomato soup","unit":"11-oz can","question":"In 1961, how much did a can of tomato soup cost?","options":["5¢","12¢","29¢"],"answer":1,"real_price":"12¢","fun_fact":"A can of tomato soup was about 12¢ in 1961 — Campbell's was famously a dime.","reminiscence":"Tomato soup and a grilled cheese — was that a lunch you remember? What was your go-to comfort meal?","source":"BLS Retail Prices of Food, 1961","difficulty":"memory_care"},{"id":"price_1961_peanutbutter","year":1961,"category":"grocery","item":"A pound of peanut butter","unit":"per lb","question":"In 1961, how much did a pound of peanut butter cost?","options":["56¢","29¢","99¢"],"answer":0,"real_price":"56¢","fun_fact":"A pound of peanut butter was about 56¢ in 1961.","reminiscence":"Peanut butter and jelly — a lunchbox classic. What did you carry your lunch in to school?","source":"BLS Retail Prices of Food, 1961","difficulty":"standard"},{"id":"price_1961_cola","year":1961,"category":"treat","item":"A carton of cola","unit":"36 ounces","question":"In 1961, how much did a carton of cola cost?","options":["31¢","59¢","15¢"],"answer":0,"real_price":"31¢","fun_fact":"A 36-ounce carton of cola was about 31¢ in 1961.","reminiscence":"Was soda pop a rare treat? Do you remember the glass bottles and returning them for the deposit?","source":"BLS Retail Prices of Food, 1961","difficulty":"standard"},{"id":"price_1960_cornflakes","year":1960,"category":"treat","item":"A box of Kellogg's Corn Flakes","unit":"18 oz","question":"In 1960, how much did a box of Kellogg's Corn Flakes cost?","options":["15¢","55¢","27¢"],"answer":2,"real_price":"27¢","fun_fact":"An 18-oz box of Corn Flakes was about 27¢ around 1960.","reminiscence":"What was breakfast like on a school morning? Did you read the back of the cereal box?","source":"The Food Timeline","difficulty":"standard"},{"id":"price_1961_oreos","year":1961,"category":"treat","item":"A pound of sandwich cookies (like Oreos)","unit":"per lb","question":"In 1961, how much did a pound of sandwich cookies (like Oreos) cost?","options":["89¢","25¢","52¢"],"answer":2,"real_price":"52¢","fun_fact":"Cream sandwich cookies ran about 52¢ a pound in 1961.","reminiscence":"What was the treat jar in your kitchen? Did you ever sneak a cookie before dinner?","source":"BLS Retail Prices of Food, 1961","difficulty":"standard"},{"id":"price_1961_mcdonalds","year":1961,"category":"dayout","item":"A McDonald's hamburger","unit":"each","question":"In 1961, how much did a McDonald's hamburger cost?","options":["15¢","5¢","35¢"],"answer":0,"real_price":"15¢","fun_fact":"A McDonald's hamburger was 15¢ from 1955 into the mid-1960s.","reminiscence":"Do you remember your first hamburger from a drive-in? Who did you go with?","source":"The Food Timeline","difficulty":"memory_care"},{"id":"price_1961_icecream","year":1961,"category":"treat","item":"A half-gallon of ice cream","unit":"½ gallon","question":"In 1961, how much did a half-gallon of ice cream cost?","options":["$0.86","$1.39","$0.45"],"answer":0,"real_price":"$0.86","fun_fact":"A half-gallon of ice cream was about $0.86 in 1961.","reminiscence":"Ice cream was a real treat. What was your favorite flavor? Did you have a soda fountain in town?","source":"BLS Retail Prices of Food, 1961","difficulty":"memory_care"},{"id":"price_1961_ham","year":1961,"category":"meat","item":"A pound of whole ham","unit":"per lb","question":"In 1961, how much did a pound of whole ham cost?","options":["99¢","61¢","35¢"],"answer":1,"real_price":"61¢","fun_fact":"Whole ham was about 61¢ a pound in 1961.","reminiscence":"Was ham the centerpiece of a holiday meal in your home? Who did the carving?","source":"BLS Retail Prices of Food, 1961","difficulty":"standard"},{"id":"price_1961_porkchops","year":1961,"category":"meat","item":"A pound of pork chops","unit":"center cut, per lb","question":"In 1961, how much did a pound of pork chops cost?","options":["$1.39","$0.49","$0.88"],"answer":2,"real_price":"$0.88","fun_fact":"Center-cut pork chops were about $0.88 a pound in 1961.","reminiscence":"What was the meal your family asked for again and again? Who was the best cook you knew?","source":"BLS Retail Prices of Food, 1961","difficulty":"standard"},{"id":"price_1961_hotdogs","year":1961,"category":"meat","item":"A pound of hot dogs","unit":"frankfurters, per lb","question":"In 1961, how much did a pound of hot dogs cost?","options":["35¢","99¢","63¢"],"answer":2,"real_price":"63¢","fun_fact":"Frankfurters were about 63¢ a pound in 1961.","reminiscence":"Do you remember summer cookouts or a hot dog at the ballpark? Who did you sit with?","source":"BLS Retail Prices of Food, 1961","difficulty":"standard"},{"id":"price_1961_tuna","year":1961,"category":"grocery","item":"A can of tuna","unit":"6½-oz can","question":"In 1961, how much did a can of tuna cost?","options":["32¢","59¢","15¢"],"answer":0,"real_price":"32¢","fun_fact":"A can of tuna was about 32¢ in 1961.","reminiscence":"Tuna casserole was a supper-table regular. What was a meal your mother could always pull together?","source":"BLS Retail Prices of Food, 1961","difficulty":"standard"},{"id":"price_1961_cheese","year":1961,"category":"dairy","item":"Half a pound of American cheese","unit":"8 oz","question":"In 1961, how much did half a pound of American cheese cost?","options":["19¢","36¢","69¢"],"answer":1,"real_price":"36¢","fun_fact":"Eight ounces of American cheese was about 36¢ in 1961.","reminiscence":"Grilled cheese, or a slice on a burger? What was in your icebox growing up?","source":"BLS Retail Prices of Food, 1961","difficulty":"standard"},{"id":"price_1961_peaches","year":1961,"category":"grocery","item":"A can of peaches","unit":"per can","question":"In 1961, how much did a can of peaches cost?","options":["33¢","15¢","65¢"],"answer":0,"real_price":"33¢","fun_fact":"A can of peaches was about 33¢ in 1961.","reminiscence":"Did your family can fruit at the end of summer? What did the pantry shelves look like?","source":"BLS Retail Prices of Food, 1961","difficulty":"standard"},{"id":"price_1961_lettuce","year":1961,"category":"produce","item":"A head of lettuce","unit":"each","question":"In 1961, how much did a head of lettuce cost?","options":["8¢","39¢","17¢"],"answer":2,"real_price":"17¢","fun_fact":"A head of lettuce was about 17¢ in 1961.","reminiscence":"Did you have a vegetable garden? What did you grow, and who tended it?","source":"BLS Retail Prices of Food, 1961","difficulty":"standard"},{"id":"price_1961_margarine","year":1961,"category":"grocery","item":"A pound of margarine","unit":"per lb","question":"In 1961, how much did a pound of margarine cost?","options":["59¢","15¢","29¢"],"answer":2,"real_price":"29¢","fun_fact":"A pound of margarine was about 29¢ in 1961 — half the price of butter.","reminiscence":"Do you remember margarine that came with a packet of color to mix in? Butter or margarine in your house?","source":"BLS Retail Prices of Food, 1961","difficulty":"standard"},{"id":"price_1961_potatochips","year":1961,"category":"treat","item":"A bag of potato chips","unit":"4 oz","question":"In 1961, how much did a bag of potato chips cost?","options":["55¢","28¢","15¢"],"answer":1,"real_price":"28¢","fun_fact":"A small bag of potato chips was about 28¢ in 1961.","reminiscence":"What was the snack in your house? Did the family gather around the television in the evening?","source":"BLS Retail Prices of Food, 1961","difficulty":"standard"},{"id":"price_1961_tea","year":1961,"category":"grocery","item":"A box of tea bags","unit":"box of 16","question":"In 1961, how much did a box of tea bags cost?","options":["25¢","49¢","12¢"],"answer":0,"real_price":"25¢","fun_fact":"A box of 16 tea bags was about 25¢ in 1961.","reminiscence":"Was your house a coffee house or a tea house? Who did you share a cup with?","source":"BLS Retail Prices of Food, 1961","difficulty":"standard"},{"id":"price_1961_rice","year":1961,"category":"grocery","item":"A pound of rice","unit":"per lb","question":"In 1961, how much did a pound of rice cost?","options":["19¢","9¢","45¢"],"answer":0,"real_price":"19¢","fun_fact":"A pound of rice was about 19¢ in 1961.","reminiscence":"What was a meal that stretched to feed everyone? How big was the table at supper time?","source":"BLS Retail Prices of Food, 1961","difficulty":"standard"},{"id":"price_1961_chuckroast","year":1961,"category":"meat","item":"A pound of chuck roast","unit":"per lb","question":"In 1961, how much did a pound of chuck roast cost?","options":["99¢","59¢","29¢"],"answer":1,"real_price":"59¢","fun_fact":"Chuck roast — the classic pot roast cut — was about 59¢ a pound in 1961.","reminiscence":"Was pot roast a Sunday tradition? What filled the house with that smell all afternoon?","source":"BLS Retail Prices of Food, 1961","difficulty":"standard"},{"id":"price_1961_sirloin","year":1961,"category":"meat","item":"A pound of sirloin steak","unit":"per lb","question":"In 1961, how much did a pound of sirloin steak cost?","options":["$1.07","$0.65","$1.79"],"answer":0,"real_price":"$1.07","fun_fact":"Sirloin steak was about $1.07 a pound in 1961 — a splurge cut.","reminiscence":"When did your family splurge on a good steak? Was there a special occasion that called for it?","source":"BLS Retail Prices of Food, 1961","difficulty":"standard"},{"id":"price_1961_lambleg","year":1961,"category":"meat","item":"A pound of leg of lamb","unit":"per lb","question":"In 1961, how much did a pound of leg of lamb cost?","options":["$1.19","$0.70","$0.39"],"answer":1,"real_price":"$0.70","fun_fact":"Leg of lamb was about $0.70 a pound in 1961.","reminiscence":"Was lamb an Easter or holiday meal in your home? Who gathered around the table?","source":"BLS Retail Prices of Food, 1961","difficulty":"standard"},{"id":"price_1961_cannedsalmon","year":1961,"category":"grocery","item":"A can of salmon","unit":"16-oz can","question":"In 1961, how much did a can of salmon cost?","options":["$1.19","$0.74","$0.39"],"answer":1,"real_price":"$0.74","fun_fact":"A 16-oz can of pink salmon was about $0.74 in 1961.","reminiscence":"Salmon patties for Friday supper? What did your family make from a can in a pinch?","source":"BLS Retail Prices of Food, 1961","difficulty":"standard"},{"id":"price_1961_evapmilk","year":1961,"category":"dairy","item":"A can of evaporated milk","unit":"14½-oz can","question":"In 1961, how much did a can of evaporated milk cost?","options":["16¢","35¢","8¢"],"answer":0,"real_price":"16¢","fun_fact":"A can of evaporated milk (like Carnation) was about 16¢ in 1961.","reminiscence":"Evaporated milk went in coffee, pies, and fudge. What did your mother keep in the cupboard for baking?","source":"BLS Retail Prices of Food, 1961","difficulty":"standard"},{"id":"price_1961_apples","year":1961,"category":"produce","item":"A pound of apples","unit":"per lb","question":"In 1961, how much did a pound of apples cost?","options":["39¢","8¢","17¢"],"answer":2,"real_price":"17¢","fun_fact":"Apples were about 17¢ a pound in 1961.","reminiscence":"Who made apple pie in your family? Was there an orchard or a favorite tree you remember?","source":"BLS Retail Prices of Food, 1961","difficulty":"standard"},{"id":"price_1961_freshtomatoes","year":1961,"category":"produce","item":"A pound of fresh tomatoes","unit":"per lb","question":"In 1961, how much did a pound of fresh tomatoes cost?","options":["59¢","29¢","15¢"],"answer":1,"real_price":"29¢","fun_fact":"Fresh tomatoes were about 29¢ a pound in 1961.","reminiscence":"Did you grow tomatoes in the garden? Was there anything like one still warm from the vine?","source":"BLS Retail Prices of Food, 1961","difficulty":"standard"},{"id":"price_1961_onions","year":1961,"category":"produce","item":"A pound of onions","unit":"per lb","question":"In 1961, how much did a pound of onions cost?","options":["10¢","29¢","5¢"],"answer":0,"real_price":"10¢","fun_fact":"Onions were about 10¢ a pound in 1961.","reminiscence":"What was always simmering on your stove? Who taught you to cook?","source":"BLS Retail Prices of Food, 1961","difficulty":"memory_care"},{"id":"price_1961_frozenoj","year":1961,"category":"grocery","item":"A can of frozen orange juice","unit":"6-oz concentrate","question":"In 1961, how much did a can of frozen orange juice cost?","options":["49¢","12¢","25¢"],"answer":2,"real_price":"25¢","fun_fact":"A can of frozen orange-juice concentrate was about 25¢ in 1961.","reminiscence":"Do you remember mixing the frozen orange juice with water in a pitcher? Who set the breakfast table?","source":"BLS Retail Prices of Food, 1961","difficulty":"standard"},{"id":"price_1961_cannedoj","year":1961,"category":"grocery","item":"A large can of orange juice","unit":"46-oz can","question":"In 1961, how much did a large can of orange juice cost?","options":["48¢","25¢","89¢"],"answer":0,"real_price":"48¢","fun_fact":"A big 46-oz can of orange juice was about 48¢ in 1961.","reminiscence":"Was orange juice an everyday drink or a special one in your house growing up?","source":"BLS Retail Prices of Food, 1961","difficulty":"standard"},{"id":"price_1961_cannedcorn","year":1961,"category":"grocery","item":"A can of corn","unit":"No. 303 can","question":"In 1961, how much did a can of corn cost?","options":["10¢","45¢","21¢"],"answer":2,"real_price":"21¢","fun_fact":"A can of cream-style corn was about 21¢ in 1961.","reminiscence":"What vegetables came from a can in winter? Did your family put up their own in summer?","source":"BLS Retail Prices of Food, 1961","difficulty":"standard"},{"id":"price_1961_cannedpeas","year":1961,"category":"grocery","item":"A can of green peas","unit":"per can","question":"In 1961, how much did a can of green peas cost?","options":["10¢","45¢","22¢"],"answer":2,"real_price":"22¢","fun_fact":"A can of green peas was about 22¢ in 1961.","reminiscence":"Which vegetable did you have to be talked into eating as a child? Did your own children?","source":"BLS Retail Prices of Food, 1961","difficulty":"standard"},{"id":"price_1961_porkbeans","year":1961,"category":"grocery","item":"A can of pork & beans","unit":"16-oz can","question":"In 1961, how much did a can of pork & beans cost?","options":["8¢","35¢","15¢"],"answer":2,"real_price":"15¢","fun_fact":"A can of pork & beans was about 15¢ in 1961.","reminiscence":"Pork and beans at a cookout or a camping trip — do any summer suppers come to mind?","source":"BLS Retail Prices of Food, 1961","difficulty":"standard"},{"id":"price_1961_ketchup","year":1961,"category":"grocery","item":"A bottle of ketchup","unit":"14-oz bottle","question":"In 1961, how much did a bottle of ketchup cost?","options":["45¢","12¢","23¢"],"answer":2,"real_price":"23¢","fun_fact":"A bottle of ketchup was about 23¢ in 1961.","reminiscence":"Was there a bottle of ketchup on every table? What was the one thing your family put on everything?","source":"BLS Retail Prices of Food, 1961","difficulty":"standard"},{"id":"price_1961_macaroni","year":1961,"category":"grocery","item":"A box of macaroni","unit":"per box","question":"In 1961, how much did a box of macaroni cost?","options":["49¢","12¢","24¢"],"answer":2,"real_price":"24¢","fun_fact":"A box of macaroni was about 24¢ in 1961.","reminiscence":"Macaroni and cheese — homemade or from the box? What was the meal the children always cheered for?","source":"BLS Retail Prices of Food, 1961","difficulty":"standard"},{"id":"price_1961_oatmeal","year":1961,"category":"grocery","item":"A box of oatmeal","unit":"18-oz box","question":"In 1961, how much did a box of oatmeal cost?","options":["45¢","22¢","10¢"],"answer":1,"real_price":"22¢","fun_fact":"A box of rolled oats was about 22¢ in 1961.","reminiscence":"Was a hot breakfast the rule on cold mornings? Who got everyone up and fed before school?","source":"BLS Retail Prices of Food, 1961","difficulty":"standard"},{"id":"price_1961_shortening","year":1961,"category":"grocery","item":"A three-pound can of shortening","unit":"3-lb can","question":"In 1961, how much did a three-pound can of shortening cost?","options":["$0.90","$1.39","$0.49"],"answer":0,"real_price":"$0.90","fun_fact":"A 3-lb can of shortening (like Crisco) was about $0.90 in 1961.","reminiscence":"Whose pie crust or fried chicken could no one beat? What was their secret?","source":"BLS Retail Prices of Food, 1961","difficulty":"standard"},{"id":"price_1961_grapejelly","year":1961,"category":"grocery","item":"A jar of grape jelly","unit":"12-oz jar","question":"In 1961, how much did a jar of grape jelly cost?","options":["55¢","15¢","29¢"],"answer":2,"real_price":"29¢","fun_fact":"A jar of grape jelly was about 29¢ in 1961.","reminiscence":"Did your family make jam or buy it? What did you spread on your morning toast?","source":"BLS Retail Prices of Food, 1961","difficulty":"standard"},{"id":"price_1961_jello","year":1961,"category":"treat","item":"A box of Jell-O","unit":"3-oz box","question":"In 1961, how much did a box of Jell-O cost?","options":["5¢","10¢","25¢"],"answer":1,"real_price":"10¢","fun_fact":"A box of flavored gelatin (Jell-O) was about 10¢ in 1961.","reminiscence":"Jell-O salad at every gathering! What was the dessert that showed up at your family potlucks?","source":"BLS Retail Prices of Food, 1961","difficulty":"memory_care"},{"id":"price_1961_sodacrackers","year":1961,"category":"grocery","item":"A pound of soda crackers","unit":"per lb","question":"In 1961, how much did a pound of soda crackers cost?","options":["29¢","15¢","55¢"],"answer":0,"real_price":"29¢","fun_fact":"A pound of soda crackers was about 29¢ in 1961.","reminiscence":"Crackers in your soup, or with a slice of cheese? What was your go-to little snack?","source":"BLS Retail Prices of Food, 1961","difficulty":"standard"},{"id":"price_1960_gas1960","year":1960,"category":"household","item":"A gallon of gasoline","unit":"per gallon","question":"In 1960, how much did a gallon of gasoline cost?","options":["59¢","31¢","18¢"],"answer":1,"real_price":"31¢","fun_fact":"Gas was about 31¢ a gallon in 1960 — and someone pumped it for you.","reminiscence":"Do you remember the service station attendant checking your oil and washing the windshield? What was your first car?","source":"U.S. EIA (via U. Missouri)","difficulty":"memory_care"},{"id":"price_1963_stamp1963","year":1963,"category":"household","item":"A first-class postage stamp","unit":"one letter","question":"In 1963, how much did a first-class postage stamp cost?","options":["5¢","10¢","2¢"],"answer":0,"real_price":"5¢","fun_fact":"A first-class stamp went from 4¢ to 5¢ in January 1963.","reminiscence":"Who did you write letters to? Do you remember waiting for a letter to arrive in the mail?","source":"USPS rate history","difficulty":"standard"},{"id":"price_1960_movie1960","year":1960,"category":"media","item":"A movie ticket","unit":"average admission","question":"In 1960, how much did a movie ticket cost?","options":["$0.35","$0.69","$1.25"],"answer":1,"real_price":"$0.69","fun_fact":"The average movie ticket was about $0.69 in 1960.","reminiscence":"What was the first movie you saw in a theater? Did you go to a drive-in on a summer night?","source":"NATO (via Motley Fool)","difficulty":"standard"},{"id":"price_1960_cigarettes1960","year":1960,"category":"household","item":"A pack of cigarettes","unit":"with tax","question":"In 1960, how much did a pack of cigarettes cost?","options":["15¢","26¢","45¢"],"answer":1,"real_price":"26¢","fun_fact":"A pack of cigarettes was about 26¢ in 1960.","reminiscence":"Almost everyone seemed to smoke back then. Do you remember the advertisements on TV?","source":"U. Missouri Prices & Wages","difficulty":"standard"},{"id":"price_1960_minwage1960","year":1960,"category":"bigticket","item":"The federal minimum wage","unit":"per hour","question":"In 1960, what was the federal minimum wage (per hour)?","options":["$1.00","$2.00","$0.50"],"answer":0,"real_price":"$1.00","fun_fact":"The federal minimum wage was exactly $1.00 an hour in 1960.","reminiscence":"What was your first job, and what did it pay? What did you spend your first paycheck on?","source":"U.S. Dept. of Labor","difficulty":"standard"},{"id":"price_1960_home1960","year":1960,"category":"bigticket","item":"A typical family home","unit":"median home value","question":"In 1960, how much did a typical family home cost?","options":["$6,500","$11,900","$24,000"],"answer":1,"real_price":"$11,900","fun_fact":"The median home value was about $11,900 in 1960.","reminiscence":"Tell me about the house you raised your family in. What do you remember most about it?","source":"U.S. Census Bureau","difficulty":"standard"},{"id":"price_1961_comic10","year":1961,"category":"media","item":"A comic book","unit":"each","question":"In 1961, how much did a comic book cost?","options":["25¢","5¢","10¢"],"answer":2,"real_price":"10¢","fun_fact":"Comic books were a dime through 1961.","reminiscence":"Who was your favorite comic-book hero? Did you trade or collect them with friends?","source":"Comichron / comic-industry records","difficulty":"memory_care"},{"id":"price_1962_barbie","year":1962,"category":"toys","item":"A Barbie doll","unit":"each","question":"In 1962, how much did a Barbie doll cost?","options":["$3.00","$1.50","$5.99"],"answer":0,"real_price":"$3.00","fun_fact":"A Barbie doll cost about $3.00 in the early 1960s.","reminiscence":"Did your children have Barbie dolls? What toys did they beg for at Christmas?","source":"Documented launch price (approximate)","difficulty":"memory_care"},{"id":"price_1964_gijoe","year":1964,"category":"toys","item":"A G.I. Joe action figure","unit":"each","question":"In 1964, how much did a G.I. Joe action figure cost?","options":["$6.99","$1.99","$4.00"],"answer":2,"real_price":"$4.00","fun_fact":"G.I. Joe arrived in 1964 for about $4.00.","reminiscence":"What did the boys in your family play with? Do you remember a toy that was the must-have one year?","source":"Documented era price (approximate)","difficulty":"standard"},{"id":"price_1963_baseballcards","year":1963,"category":"toys","item":"A pack of baseball cards","unit":"6 cards + gum","question":"In 1963, how much did a pack of baseball cards cost?","options":["15¢","1¢","5¢"],"answer":2,"real_price":"5¢","fun_fact":"A nickel bought a pack of Topps baseball cards — with a stick of gum — in the 1960s.","reminiscence":"Did you collect baseball cards? Who was the player everyone wanted? Did your mother ever throw them out?","source":"Topps / trading-card history","difficulty":"memory_care"},{"id":"price_1963_easybake","year":1963,"category":"toys","item":"An Easy-Bake Oven","unit":"each","question":"In 1963, how much did an Easy-Bake Oven cost?","options":["$29.95","$15.95","$7.99"],"answer":1,"real_price":"$15.95","fun_fact":"The Easy-Bake Oven arrived in 1963 for about $15.95.","reminiscence":"Did anyone in your family have an Easy-Bake Oven? What's the first thing you ever learned to bake?","source":"Documented launch price (approximate)","difficulty":"standard"},{"id":"price_1963_slinky","year":1963,"category":"toys","item":"A Slinky","unit":"each","question":"In 1963, how much did a Slinky cost?","options":["$1.00","$0.49","$1.99"],"answer":0,"real_price":"$1.00","fun_fact":"A Slinky cost about a dollar in the 1960s.","reminiscence":"Did you ever send a Slinky down the stairs? What games did you play indoors on a rainy day?","source":"Era price (approximate)","difficulty":"memory_care"},{"id":"price_1963_pennycandy","year":1963,"category":"treat","item":"A piece of penny candy","unit":"each","question":"In 1963, how much did a piece of penny candy cost?","options":["1¢","5¢","10¢"],"answer":0,"real_price":"1¢","fun_fact":"Penny candy really was a penny — a whole bag cost only a nickel or dime.","reminiscence":"What did you buy at the candy counter with a nickel? Was there a corner store you walked to as a child?","source":"Documented era price","difficulty":"memory_care"},{"id":"price_1964_vealcutlets","year":1964,"category":"meat","item":"A pound of veal cutlets","unit":"per lb","question":"In 1964, how much did a pound of veal cutlets cost?","options":["$0.79","$1.42","$2.49"],"answer":1,"real_price":"$1.42","fun_fact":"Veal cutlets were about $1.42 a pound in 1964 — one of the priciest cuts at the butcher.","reminiscence":"What was the fanciest meal your mother made? Who came to dinner when she pulled out all the stops?","source":"BLS Retail Prices of Food, 1964","difficulty":"standard"},{"id":"price_1961_tomatojuice","year":1961,"category":"grocery","item":"A large can of tomato juice","unit":"46-oz can","question":"In 1961, how much did a large can of tomato juice cost?","options":["65¢","15¢","33¢"],"answer":2,"real_price":"33¢","fun_fact":"A big can of tomato juice was about 33¢ in 1961.","reminiscence":"Was a glass of juice part of breakfast? What got everyone going in the morning?","source":"BLS Retail Prices of Food, 1961","difficulty":"standard"},{"id":"price_1961_babyfood","year":1961,"category":"grocery","item":"A jar of baby food","unit":"4½-oz jar","question":"In 1961, how much did a jar of baby food cost?","options":["11¢","5¢","25¢"],"answer":0,"real_price":"11¢","fun_fact":"A jar of baby food was about 11¢ in 1961.","reminiscence":"Tell me about your babies. How many did you raise, and who was the easy one?","source":"BLS Retail Prices of Food, 1961","difficulty":"memory_care"},{"id":"price_1961_prunes","year":1961,"category":"grocery","item":"A pound of prunes","unit":"per lb","question":"In 1961, how much did a pound of prunes cost?","options":["19¢","79¢","42¢"],"answer":2,"real_price":"42¢","fun_fact":"A pound of prunes was about 42¢ in 1961.","reminiscence":"Was there a food your grandparents swore by? What old-fashioned remedy do you remember?","source":"BLS Retail Prices of Food, 1961","difficulty":"standard"},{"id":"price_1961_sweetpotatoes","year":1961,"category":"produce","item":"A pound of sweet potatoes","unit":"per lb","question":"In 1961, how much did a pound of sweet potatoes cost?","options":["35¢","8¢","16¢"],"answer":2,"real_price":"16¢","fun_fact":"Sweet potatoes were about 16¢ a pound in 1961.","reminiscence":"Candied yams at Thanksgiving — was that on your table? Who made the holiday sides?","source":"BLS Retail Prices of Food, 1961","difficulty":"memory_care"},{"id":"price_1961_lemons","year":1961,"category":"produce","item":"A pound of lemons","unit":"per lb","question":"In 1961, how much did a pound of lemons cost?","options":["9¢","45¢","20¢"],"answer":2,"real_price":"20¢","fun_fact":"Lemons were about 20¢ a pound in 1961.","reminiscence":"Fresh lemonade on a hot afternoon — did you have a stand as a child, or make a pitcher for the porch?","source":"BLS Retail Prices of Food, 1961","difficulty":"memory_care"},{"id":"price_1968_bread68","year":1968,"category":"grocery","item":"A loaf of white bread","unit":"per 1-lb loaf","question":"In 1968, how much did a loaf of white bread cost?","options":["45¢","22¢","12¢"],"answer":1,"real_price":"22¢","fun_fact":"Bread was about 22¢ a loaf in 1968 — barely changed from 21¢ in 1961.","reminiscence":"Did the price of bread ever make you shake your head? What did a dollar buy at the store back then?","source":"BLS Retail Prices of Food, 1968","difficulty":"standard"},{"id":"price_1968_milk68","year":1968,"category":"dairy","item":"A half-gallon of milk","unit":"fresh, grocery","question":"In 1968, how much did a half-gallon of milk cost?","options":["54¢","35¢","89¢"],"answer":0,"real_price":"54¢","fun_fact":"A half-gallon of milk was about 54¢ at the grocery in 1968.","reminiscence":"By the late '60s, were you buying milk at the store instead of from the milkman? When did that change for you?","source":"BLS Retail Prices of Food, 1968","difficulty":"standard"},{"id":"price_1968_eggs68","year":1968,"category":"dairy","item":"A dozen eggs","unit":"Grade A, large","question":"In 1968, how much did a dozen eggs cost?","options":["53¢","95¢","29¢"],"answer":0,"real_price":"53¢","fun_fact":"A dozen eggs was about 53¢ in 1968.","reminiscence":"Fried, scrambled, or over easy — how did you like your eggs? Who cooked breakfast on Sundays?","source":"BLS Retail Prices of Food, 1968","difficulty":"standard"},{"id":"price_1968_groundbeef68","year":1968,"category":"meat","item":"A pound of ground beef","unit":"hamburger, per lb","question":"In 1968, how much did a pound of ground beef cost?","options":["56¢","99¢","29¢"],"answer":0,"real_price":"56¢","fun_fact":"Ground beef rose to about 56¢ a pound by 1968 (up from 51¢ in 1961).","reminiscence":"Meatloaf, hamburgers, or a casserole — what did your family do with a pound of ground beef?","source":"BLS Retail Prices of Food, 1968","difficulty":"standard"},{"id":"price_1968_bacon68","year":1968,"category":"meat","item":"A pound of bacon","unit":"per lb","question":"In 1968, how much did a pound of bacon cost?","options":["$1.39","$0.45","$0.81"],"answer":2,"real_price":"$0.81","fun_fact":"Bacon jumped to about $0.81 a pound by 1968 — up from $0.71 in 1961.","reminiscence":"Was Sunday breakfast the big one in your house? What was always on the table?","source":"BLS Retail Prices of Food, 1968","difficulty":"standard"},{"id":"price_1968_coffee68","year":1968,"category":"grocery","item":"A one-pound can of coffee","unit":"per 1-lb can","question":"In 1968, how much did a one-pound can of coffee cost?","options":["$0.76","$0.45","$1.29"],"answer":0,"real_price":"$0.76","fun_fact":"A pound of coffee was about $0.76 in 1968.","reminiscence":"Was there always a pot of coffee on? Who were the coffee drinkers in your family?","source":"BLS Retail Prices of Food, 1968","difficulty":"standard"},{"id":"price_1968_butter68","year":1968,"category":"dairy","item":"A pound of butter","unit":"per lb","question":"In 1968, how much did a pound of butter cost?","options":["$0.49","$0.84","$1.39"],"answer":1,"real_price":"$0.84","fun_fact":"Butter climbed to about $0.84 a pound by 1968 (up from $0.76 in 1961).","reminiscence":"Was real butter a treat, or did your family stretch it with margarine? What did you spread on warm bread?","source":"BLS Retail Prices of Food, 1968","difficulty":"standard"},{"id":"price_1968_sugar68","year":1968,"category":"grocery","item":"A five-pound bag of sugar","unit":"5 lb","question":"In 1968, how much did a five-pound bag of sugar cost?","options":["61¢","99¢","35¢"],"answer":0,"real_price":"61¢","fun_fact":"Five pounds of sugar was about 61¢ in 1968.","reminiscence":"What was the sweetest thing to come out of your kitchen? Who had the sweet tooth in the family?","source":"BLS Retail Prices of Food, 1968","difficulty":"standard"},{"id":"price_1968_potroast68","year":1968,"category":"meat","item":"A pound of chuck roast","unit":"pot roast, per lb","question":"In 1968, how much did a pound of chuck roast cost?","options":["$1.09","$0.64","$0.35"],"answer":1,"real_price":"$0.64","fun_fact":"Chuck roast for a pot roast was about $0.64 a pound in 1968.","reminiscence":"Sunday pot roast with potatoes and carrots — was that your family's tradition? Who sat where at the table?","source":"BLS Retail Prices of Food, 1968","difficulty":"standard"},{"id":"price_1968_roundsteak68","year":1968,"category":"meat","item":"A pound of round steak","unit":"per lb","question":"In 1968, how much did a pound of round steak cost?","options":["$1.89","$1.14","$0.69"],"answer":1,"real_price":"$1.14","fun_fact":"Round steak was about $1.14 a pound in 1968.","reminiscence":"Payday steak dinner? What made a meal feel like a celebration in your home?","source":"BLS Retail Prices of Food, 1968","difficulty":"standard"},{"id":"price_1968_chicken68","year":1968,"category":"meat","item":"A pound of chicken","unit":"frying chicken, per lb","question":"In 1968, how much did a pound of chicken cost?","options":["40¢","79¢","19¢"],"answer":0,"real_price":"40¢","fun_fact":"A frying chicken was about 40¢ a pound in 1968.","reminiscence":"Was Sunday chicken dinner a ritual? Who got the drumstick?","source":"BLS Retail Prices of Food, 1968","difficulty":"standard"},{"id":"price_1968_turkey68","year":1968,"category":"meat","item":"A pound of turkey","unit":"per lb","question":"In 1968, how much did a pound of turkey cost?","options":["46¢","89¢","25¢"],"answer":0,"real_price":"46¢","fun_fact":"Turkey was about 46¢ a pound in 1968.","reminiscence":"Tell me about Thanksgiving at your house. Who hosted, and what was the one dish everyone waited for?","source":"BLS Retail Prices of Food, 1968","difficulty":"memory_care"},{"id":"price_1968_ham68","year":1968,"category":"meat","item":"A pound of ham","unit":"whole ham, per lb","question":"In 1968, how much did a pound of ham cost?","options":["$1.19","$0.39","$0.69"],"answer":2,"real_price":"$0.69","fun_fact":"Whole ham was about $0.69 a pound in 1968.","reminiscence":"Was a baked ham the Easter or Christmas centerpiece? What sides went with it?","source":"BLS Retail Prices of Food, 1968","difficulty":"standard"},{"id":"price_1968_icecream68","year":1968,"category":"treat","item":"A half-gallon of ice cream","unit":"½ gallon","question":"In 1968, how much did a half-gallon of ice cream cost?","options":["$0.81","$1.39","$0.45"],"answer":0,"real_price":"$0.81","fun_fact":"A half-gallon of ice cream was about $0.81 in 1968.","reminiscence":"A bowl of ice cream in front of the television — what was everyone watching in the late '60s?","source":"BLS Retail Prices of Food, 1968","difficulty":"memory_care"},{"id":"price_1968_cheese68","year":1968,"category":"dairy","item":"Half a pound of American cheese","unit":"8 oz","question":"In 1968, how much did half a pound of American cheese cost?","options":["25¢","44¢","79¢"],"answer":1,"real_price":"44¢","fun_fact":"Eight ounces of American cheese was about 44¢ in 1968.","reminiscence":"Grilled cheese sandwiches on a rainy day — who made them best?","source":"BLS Retail Prices of Food, 1968","difficulty":"standard"},{"id":"price_1968_apples68","year":1968,"category":"produce","item":"A pound of apples","unit":"per lb","question":"In 1968, how much did a pound of apples cost?","options":["12¢","24¢","49¢"],"answer":1,"real_price":"24¢","fun_fact":"Apples were about 24¢ a pound in 1968.","reminiscence":"An apple for the teacher, or apple pie for dessert? What do apples bring to mind?","source":"BLS Retail Prices of Food, 1968","difficulty":"standard"},{"id":"price_1968_potatoes68","year":1968,"category":"produce","item":"A ten-pound bag of potatoes","unit":"10 lb","question":"In 1968, how much did a ten-pound bag of potatoes cost?","options":["$0.76","$1.29","$0.39"],"answer":0,"real_price":"$0.76","fun_fact":"Ten pounds of potatoes was about $0.76 in 1968.","reminiscence":"Peeling potatoes for a big family — did that chore fall to you as a child?","source":"BLS Retail Prices of Food, 1968","difficulty":"standard"},{"id":"price_1968_cola68","year":1968,"category":"treat","item":"A six-pack carton of cola","unit":"72 ounces","question":"In 1968, how much did a six-pack carton of cola cost?","options":["$0.65","$0.39","$1.09"],"answer":0,"real_price":"$0.65","fun_fact":"A 72-oz carton of cola was about $0.65 in 1968.","reminiscence":"Was pop a weekend treat or an everyday thing by the late '60s? What was your family's brand?","source":"BLS Retail Prices of Food, 1968","difficulty":"standard"},{"id":"price_1968_chocolatebar68","year":1968,"category":"treat","item":"A chocolate candy bar","unit":"each","question":"In 1968, how much did a chocolate candy bar cost?","options":["10¢","5¢","2¢"],"answer":1,"real_price":"5¢","fun_fact":"A chocolate bar was still about a nickel in 1968.","reminiscence":"What was the candy you saved your pennies for? Was there a corner store you walked to?","source":"BLS Retail Prices of Food, 1968","difficulty":"memory_care"},{"id":"price_1968_cornflakes68","year":1968,"category":"treat","item":"A box of corn flakes","unit":"per box","question":"In 1968, how much did a box of corn flakes cost?","options":["59¢","31¢","15¢"],"answer":1,"real_price":"31¢","fun_fact":"A box of corn flakes was about 31¢ in 1968.","reminiscence":"Did you save the box tops or send away for the cereal-box prize? Which one did you want most?","source":"BLS Retail Prices of Food, 1968","difficulty":"standard"},{"id":"price_1965_cokebottle","year":1965,"category":"dayout","item":"A bottle of Coca-Cola","unit":"from the machine","question":"In 1965, how much did a bottle of Coca-Cola cost?","options":["25¢","10¢","5¢"],"answer":1,"real_price":"10¢","fun_fact":"A bottle of Coke from the machine was about a dime in the mid-1960s.","reminiscence":"Do you remember the cold, glass Coke bottle from the machine? Where did you buy yours?","source":"Vintage menu records (Click Americana)","difficulty":"memory_care"},{"id":"price_1965_mcd_cheeseburger","year":1965,"category":"dayout","item":"A McDonald's cheeseburger","unit":"each","question":"In 1965, how much did a McDonald's cheeseburger cost?","options":["10¢","39¢","19¢"],"answer":2,"real_price":"19¢","fun_fact":"A McDonald's cheeseburger was 19¢ in the 1960s.","reminiscence":"Do you remember the first time you ate at McDonald's? Who took you, and what did you order?","source":"Vintage McDonald's menu (Click Americana)","difficulty":"standard"},{"id":"price_1965_mcd_fries","year":1965,"category":"dayout","item":"McDonald's french fries","unit":"a bag","question":"In 1965, how much did McDonald's french fries cost?","options":["5¢","25¢","10¢"],"answer":2,"real_price":"10¢","fun_fact":"A bag of McDonald's fries was just 10¢ in the 1960s.","reminiscence":"Golden fries from a paper bag — do you remember sharing them in the car on the way home?","source":"Vintage McDonald's menu (Click Americana)","difficulty":"standard"},{"id":"price_1965_mcd_shake","year":1965,"category":"dayout","item":"A McDonald's milkshake","unit":"each","question":"In 1965, how much did a McDonald's milkshake cost?","options":["10¢","45¢","20¢"],"answer":2,"real_price":"20¢","fun_fact":"A thick McDonald's shake was 20¢ in the 1960s.","reminiscence":"Chocolate, vanilla, or strawberry? What was your milkshake order?","source":"Vintage McDonald's menu (Click Americana)","difficulty":"standard"},{"id":"price_1965_mcd_meal","year":1965,"category":"dayout","item":"A whole McDonald's meal","unit":"burger, fries & a drink","question":"In 1965, how much did a whole McDonald's meal cost?","options":["19¢","35¢","69¢"],"answer":1,"real_price":"35¢","fun_fact":"A burger, fries, and a drink came to about 35¢ at McDonald's in the 1960s.","reminiscence":"Eating out as a family was a treat. Where did you go for a special meal out?","source":"Vintage McDonald's menu (Click Americana)","difficulty":"standard"},{"id":"price_1965_dinercoffee","year":1965,"category":"dayout","item":"A cup of coffee at the diner","unit":"a cup","question":"In 1965, how much did a cup of coffee at the diner cost?","options":["10¢","25¢","5¢"],"answer":0,"real_price":"10¢","fun_fact":"A cup of coffee at the counter was about a dime in the mid-1960s.","reminiscence":"Was there a diner or lunch counter you and your friends went to? Who did you sit with?","source":"Vintage menu records (Click Americana)","difficulty":"memory_care"},{"id":"price_1965_payphone","year":1965,"category":"dayout","item":"A call from a pay phone","unit":"local call","question":"In 1965, how much did a call from a pay phone cost?","options":["25¢","5¢","10¢"],"answer":2,"real_price":"10¢","fun_fact":"A local call from a pay phone cost a dime in the 1960s.","reminiscence":"Do you remember calling home from a phone booth? Did you always keep a dime in your pocket, just in case?","source":"Documented era price","difficulty":"memory_care"},{"id":"price_1965_comic12","year":1965,"category":"media","item":"A comic book","unit":"each","question":"In 1965, how much did a comic book cost?","options":["5¢","29¢","12¢"],"answer":2,"real_price":"12¢","fun_fact":"Comic books went up to 12¢ in 1962 and stayed there through the 1960s.","reminiscence":"Where did you buy your comics — the drugstore, the newsstand? What did you spend your allowance on?","source":"Comichron / comic-industry records","difficulty":"standard"},{"id":"price_1965_newspaper65","year":1965,"category":"media","item":"A daily newspaper","unit":"one copy","question":"In 1965, how much did a daily newspaper cost?","options":["10¢","25¢","5¢"],"answer":0,"real_price":"10¢","fun_fact":"A daily newspaper was about a dime in 1965.","reminiscence":"Did your father read the paper every evening? Which section did you reach for first?","source":"Morris County Library historic prices","difficulty":"standard"},{"id":"price_1965_record45","year":1965,"category":"media","item":"A 45 rpm record (a single)","unit":"one single","question":"In 1965, how much did a 45 rpm record (a single) cost?","options":["$1.49","$0.89","$0.49"],"answer":1,"real_price":"$0.89","fun_fact":"A 45 rpm single ran about 75–98¢ in the 1960s.","reminiscence":"What was the first record you ever bought? Do you remember dancing to it?","source":"Record retail price histories","difficulty":"standard"},{"id":"price_1965_lpalbum","year":1965,"category":"media","item":"A record album (LP)","unit":"one album","question":"In 1965, how much did a record album (LP) cost?","options":["$1.99","$3.98","$5.99"],"answer":1,"real_price":"$3.98","fun_fact":"A new LP album listed around $3.98 in the mid-1960s.","reminiscence":"Whose albums did you play over and over? Did you have a record player in your room?","source":"Record retail price histories","difficulty":"standard"},{"id":"price_1965_paperback","year":1965,"category":"media","item":"A paperback book","unit":"each","question":"In 1965, how much did a paperback book cost?","options":["25¢","50¢","95¢"],"answer":1,"real_price":"50¢","fun_fact":"A paperback book was about 50¢ in the mid-1960s.","reminiscence":"Were you a reader? What book have you never forgotten?","source":"Era price (approximate)","difficulty":"standard"},{"id":"price_1965_movie1965","year":1965,"category":"media","item":"A movie ticket","unit":"average admission","question":"In 1965, how much did a movie ticket cost?","options":["$1.99","$1.01","$0.50"],"answer":1,"real_price":"$1.01","fun_fact":"The average movie ticket passed $1.00 in 1965.","reminiscence":"What was a movie you saw more than once? Did you go on dates to the pictures?","source":"NATO (via Motley Fool)","difficulty":"standard"},{"id":"price_1965_gas1965","year":1965,"category":"household","item":"A gallon of gasoline","unit":"per gallon","question":"In 1965, how much did a gallon of gasoline cost?","options":["18¢","31¢","59¢"],"answer":1,"real_price":"31¢","fun_fact":"Gas held around 31¢ a gallon in 1965.","reminiscence":"Do you remember filling up for a few dollars? Where did you like to drive on a Sunday?","source":"U.S. EIA","difficulty":"standard"},{"id":"price_1965_gum","year":1965,"category":"household","item":"A pack of chewing gum","unit":"each","question":"In 1965, how much did a pack of chewing gum cost?","options":["5¢","15¢","2¢"],"answer":0,"real_price":"5¢","fun_fact":"A pack of gum was a nickel in the 1960s.","reminiscence":"What was the candy or gum you always had in your pocket as a kid?","source":"Documented era price","difficulty":"memory_care"},{"id":"price_1967_levis","year":1967,"category":"household","item":"A pair of Levi's blue jeans","unit":"one pair","question":"In 1967, how much did a pair of Levi's blue jeans cost?","options":["$2.50","$5.00","$9.00"],"answer":1,"real_price":"$5.00","fun_fact":"A pair of Levi's ran about $5 in the 1960s.","reminiscence":"Do you remember your first pair of blue jeans? What did you wear them to?","source":"Era price (approximate)","difficulty":"standard"},{"id":"price_1965_vwbeetle65","year":1965,"category":"bigticket","item":"A brand-new Volkswagen Beetle","unit":"deluxe sedan","question":"In 1965, how much did a brand-new Volkswagen Beetle cost?","options":["$1,563","$2,895","$895"],"answer":0,"real_price":"$1,563","fun_fact":"A new VW Beetle deluxe sedan was about $1,563 in 1965.","reminiscence":"Did you or someone you knew drive a Beetle? What was the car that got your family around?","source":"1965 VW price list","difficulty":"standard"},{"id":"price_1965_washingmachine","year":1965,"category":"bigticket","item":"A washing machine","unit":"each","question":"In 1965, how much did a washing machine cost?","options":["$200","$399","$99"],"answer":0,"real_price":"$200","fun_fact":"A new washing machine ran around $200 in the 1960s.","reminiscence":"Do you remember wash day? Was there a wringer washer, or a clothesline in the yard?","source":"Sears catalog (approximate)","difficulty":"standard"},{"id":"price_1968_porterhouse","year":1968,"category":"meat","item":"A pound of porterhouse steak","unit":"per lb","question":"In 1968, how much did a pound of porterhouse steak cost?","options":["$0.89","$1.42","$2.29"],"answer":1,"real_price":"$1.42","fun_fact":"Porterhouse steak was about $1.42 a pound in 1968.","reminiscence":"Was there a special-occasion steak dinner in your family? What were you celebrating?","source":"BLS Retail Prices of Food, 1968","difficulty":"standard"},{"id":"price_1968_porksausage","year":1968,"category":"meat","item":"A pound of pork sausage","unit":"per lb","question":"In 1968, how much did a pound of pork sausage cost?","options":["$1.09","$0.35","$0.66"],"answer":2,"real_price":"$0.66","fun_fact":"Pork sausage was about $0.66 a pound in 1968.","reminiscence":"Sausage and eggs on a Saturday? Who was the early riser who got breakfast going?","source":"BLS Retail Prices of Food, 1968","difficulty":"standard"},{"id":"price_1968_bologna","year":1968,"category":"meat","item":"Half a pound of bologna","unit":"8 oz","question":"In 1968, how much did half a pound of bologna cost?","options":["25¢","48¢","89¢"],"answer":1,"real_price":"48¢","fun_fact":"Eight ounces of bologna was about 48¢ in 1968.","reminiscence":"A bologna sandwich in the lunchbox — was that you? What did you trade at the lunch table?","source":"BLS Retail Prices of Food, 1968","difficulty":"memory_care"},{"id":"price_1968_cannedham","year":1968,"category":"meat","item":"A pound of canned ham","unit":"per lb","question":"In 1968, how much did a pound of canned ham cost?","options":["$1.79","$1.05","$0.59"],"answer":1,"real_price":"$1.05","fun_fact":"Canned ham was about $1.05 a pound in 1968.","reminiscence":"Was there a canned ham in the pantry for company? What did you keep on hand for a surprise guest?","source":"BLS Retail Prices of Food, 1968","difficulty":"standard"},{"id":"price_1968_chickenbreasts","year":1968,"category":"meat","item":"A pound of chicken breasts","unit":"per lb","question":"In 1968, how much did a pound of chicken breasts cost?","options":["$0.39","$0.70","$1.19"],"answer":1,"real_price":"$0.70","fun_fact":"Chicken breasts were about $0.70 a pound in 1968.","reminiscence":"Who carved the chicken at your table? Did everyone have a favorite piece?","source":"BLS Retail Prices of Food, 1968","difficulty":"standard"},{"id":"price_1968_sardines","year":1968,"category":"grocery","item":"A can of sardines","unit":"4-oz can","question":"In 1968, how much did a can of sardines cost?","options":["8¢","16¢","35¢"],"answer":1,"real_price":"16¢","fun_fact":"A can of sardines was about 16¢ in 1968.","reminiscence":"Sardines on crackers — was that somebody's favorite snack in your house?","source":"BLS Retail Prices of Food, 1968","difficulty":"standard"},{"id":"price_1968_chickensoup","year":1968,"category":"grocery","item":"A can of chicken noodle soup","unit":"10½-oz can","question":"In 1968, how much did a can of chicken noodle soup cost?","options":["8¢","39¢","17¢"],"answer":2,"real_price":"17¢","fun_fact":"A can of chicken noodle soup was about 17¢ in 1968.","reminiscence":"Chicken soup for a sick day — who took care of you when you were under the weather?","source":"BLS Retail Prices of Food, 1968","difficulty":"memory_care"},{"id":"price_1968_cannedspaghetti","year":1968,"category":"grocery","item":"A can of spaghetti","unit":"15½-oz can","question":"In 1968, how much did a can of spaghetti cost?","options":["39¢","17¢","8¢"],"answer":1,"real_price":"17¢","fun_fact":"A can of spaghetti was about 17¢ in 1968.","reminiscence":"A quick lunch from a can — what did you make when the kids were hungry and time was short?","source":"BLS Retail Prices of Food, 1968","difficulty":"standard"},{"id":"price_1968_instantmash","year":1968,"category":"grocery","item":"A box of instant mashed potatoes","unit":"7 oz","question":"In 1968, how much did a box of instant mashed potatoes cost?","options":["19¢","69¢","37¢"],"answer":2,"real_price":"37¢","fun_fact":"Instant mashed potatoes were about 37¢ a box in 1968 — a modern convenience back then.","reminiscence":"Did you trust the new 'instant' foods, or did you peel your own potatoes? What conveniences did you welcome?","source":"BLS Retail Prices of Food, 1968","difficulty":"standard"},{"id":"price_1968_cannedpears","year":1968,"category":"grocery","item":"A can of pears","unit":"No. 2½ can","question":"In 1968, how much did a can of pears cost?","options":["89¢","29¢","53¢"],"answer":2,"real_price":"53¢","fun_fact":"A can of pears was about 53¢ in 1968.","reminiscence":"Canned pears with a dollop of cottage cheese — what was dessert on an ordinary night?","source":"BLS Retail Prices of Food, 1968","difficulty":"standard"},{"id":"price_1968_stamp1968","year":1968,"category":"household","item":"A first-class postage stamp","unit":"one letter","question":"In 1968, how much did a first-class postage stamp cost?","options":["3¢","12¢","6¢"],"answer":2,"real_price":"6¢","fun_fact":"A first-class stamp rose to 6¢ in January 1968.","reminiscence":"Did you send cards for the holidays? How long was your Christmas-card list?","source":"USPS rate history","difficulty":"standard"},{"id":"price_1965_mustang1965","year":1965,"category":"bigticket","item":"A brand-new Ford Mustang","unit":"base model","question":"In 1965, how much did a brand-new Ford Mustang cost?","options":["$4,500","$1,295","$2,368"],"answer":2,"real_price":"$2,368","fun_fact":"The 1965 Ford Mustang started at about $2,368 — it was an instant sensation.","reminiscence":"Do you remember when the Mustang came out? What was the dream car of your generation?","source":"Ford / widely cited MSRP","difficulty":"memory_care"},{"id":"price_1968_mcdonalds1968","year":1968,"category":"dayout","item":"A McDonald's hamburger","unit":"each","question":"In 1968, how much did a McDonald's hamburger cost?","options":["18¢","10¢","39¢"],"answer":0,"real_price":"18¢","fun_fact":"A McDonald's hamburger rose to 18¢ by 1968.","reminiscence":"Was eating out a rare treat when you were raising children? Where did you like to go?","source":"The Food Timeline","difficulty":"standard"}];
+
+async function loadAllQuestions() {
+  allQuestions = INLINE_QUESTIONS;
+}
+
+// ─── GAME START ───────────────────────────────────────────────────────────────
+function calcEra(year) {
+  const raw_start = year + 15;
+  const raw_end   = year + 25;
+  // Clamp to our full database range (1935–1994)
+  const start = Math.max(1935, raw_start);
+  const end   = Math.min(1994, raw_end);
+  return { start, end };
+}
+
+function shuffle(arr) {
+  const a = [...arr];
+  for (let i = a.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [a[i], a[j]] = [a[j], a[i]];
+  }
+  return a;
+}
+
+function startGame() {
+  // ── GENTLE / MEMORY CARE: bypass year check ──
+  if (CG_GENTLE_MODE) {
+    unlockAudio();
+    startGentleGame();
+    return;
+  }
+  unlockAudio();
+  // Apply caregiver display settings
+  const scoreEl = document.getElementById('score-display');
+  if (scoreEl) scoreEl.style.display = CG_HIDE_SCORE ? 'none' : '';
+  const ttsBtn = document.getElementById('tts-btn');
+  if (ttsBtn) ttsBtn.style.display = (CG_AUTO_READ || window.speechSynthesis) ? '' : 'none';
+
+  // Pool = the chosen round (or everything). Difficulty does NOT filter the pool — it only
+  // changes how many price choices show (3 for Standard, 2 for Memory Care), in renderQuestion.
+  let pool;
+  if (chosenCategory && chosenCategory !== 'all') {
+    pool = allQuestions.filter(q => q.category === chosenCategory);
+    if (pool.length < 5) pool = allQuestions.slice();  // tiny round -> everything
+  } else {
+    pool = allQuestions.slice();
+  }
+
+  // (Price game: no difficulty-based pool filtering — every card is reachable in every
+  // mode; Standard shows 3 choices, Memory Care shows 2. See renderQuestion.)
+
+  // Apply category filter (skip for Memory Care — MC questions aren't category-filtered)
+  if (CG_DIFF_MODE !== 'memory_care' && CG_CATEGORIES.length < ALL_CATEGORIES.length) {
+    const catFiltered = pool.filter(q => CG_CATEGORIES.includes(q.category));
+    if (catFiltered.length >= 5) pool = catFiltered;
+  }
+
+  gameQuestions = shuffle(pool).slice(0, QUESTIONS_PER_GAME);
+  currentIdx = 0;
+  score = 0;
+
+  const eraBadge = document.getElementById('era-badge');
+  if (CG_DIFF_MODE === 'memory_care') {
+    eraBadge.style.display = 'none';
+  } else {
+    eraBadge.style.display = '';
+    eraBadge.textContent = (chosenCategory && chosenCategory !== 'all' && CAT_LABELS[chosenCategory]) ? CAT_LABELS[chosenCategory] : 'The 1960s';
+  }
+  document.getElementById('header').style.display = '';
+  document.getElementById('progress-wrap').style.display = '';
+
+  updateScoreDisplay();
+  showScreen('question');
+  renderQuestion();
+}
+
+function playAgain() {
+  startGame();
+}
+
+function changeYear() {
+  birthYear = '';
+  document.getElementById('header').style.display = 'none';
+  document.getElementById('progress-wrap').style.display = 'none';
+  document.getElementById('era-badge').style.display = '';
+  showScreen('welcome');
+  applyGentleWelcome();
+  if (!CG_GENTLE_MODE && CG_DIFF_MODE !== 'memory_care') updateYearDisplay();
+}
+
+// ─── QUESTION RENDERING ───────────────────────────────────────────────────────
+const CAT_LABELS = {
+  grocery:'🛒 At the Grocery Store',
+  meat:'🥩 The Butcher Counter',
+  dairy:'🥛 Dairy & Eggs',
+  produce:'🍎 Fruit & Vegetables',
+  treat:'🍬 Treats & Sweets',
+  household:'🏠 Around the House',
+  dayout:'🎟️ A Day Out',
+  media:'🎵 Music, Movies & Reading',
+  toys:'🧸 Toys & Playthings',
+  bigticket:'🚗 The Big Purchases'
+};
+
+function adjustQuestionFontSize(text) {
+  const el = document.getElementById('q-text');
+  const len = text.length;
+  let qSize, optPadding, optFontSize, optMinHeight;
+
+  if (len <= 80) {
+    qSize = 'clamp(17px, 4.5cqw, 22px)';
+    optPadding = '12px 14px'; optFontSize = 'clamp(15px, 4cqw, 18px)'; optMinHeight = '52px';
+  } else if (len <= 120) {
+    qSize = 'clamp(15px, 4.0cqw, 19px)';
+    optPadding = '10px 14px'; optFontSize = 'clamp(14px, 3.8cqw, 17px)'; optMinHeight = '48px';
+  } else if (len <= 160) {
+    qSize = 'clamp(13px, 3.5cqw, 16px)';
+    optPadding = '8px 14px'; optFontSize = 'clamp(13px, 3.5cqw, 15px)'; optMinHeight = '42px';
+  } else if (len <= 200) {
+    qSize = 'clamp(12px, 3.2cqw, 14px)';
+    optPadding = '6px 14px'; optFontSize = 'clamp(12px, 3.2cqw, 14px)'; optMinHeight = '38px';
+  } else {
+    qSize = 'clamp(11px, 2.9cqw, 13px)';
+    optPadding = '5px 14px'; optFontSize = 'clamp(11px, 3.0cqw, 13px)'; optMinHeight = '34px';
+  }
+
+  el.style.fontSize = qSize;
+  for (let i = 0; i < 4; i++) {
+    const btn = document.getElementById(`opt-${i}`);
+    if (btn) {
+      btn.style.padding = optPadding;
+      btn.style.fontSize = optFontSize;
+      btn.style.minHeight = optMinHeight;
+    }
+  }
+}
+
+function renderQuestion() {
+  const q = gameQuestions[currentIdx];
+  answered = false;
+
+  document.getElementById('q-number').textContent =
+    `Question ${currentIdx + 1} of ${gameQuestions.length}`;
+  document.getElementById('q-category').textContent =
+    CAT_LABELS[q.category] || q.category;
+  document.getElementById('q-text').textContent = q.question;
+  adjustQuestionFontSize(q.question);
+
+  const isMemoryCare = CG_DIFF_MODE === 'memory_care';
+  const optionCount  = isMemoryCare ? 2 : 3;
+  const letters = ['A','B','C','D'];
+
+  // For Memory Care: shuffle the 2 options so answer isn't always first
+  let displayOptions, displayAnswer;
+  if (isMemoryCare) {
+    const correctText = q.options[q.answer];
+    const wrongText   = q.options[q.answer === 0 ? 1 : 0];
+    const correctFirst = Math.random() < 0.5;
+    displayOptions = correctFirst ? [correctText, wrongText] : [wrongText, correctText];
+    displayAnswer  = correctFirst ? 0 : 1;
+  } else {
+    displayOptions = q.options;
+    displayAnswer  = q.answer;
+  }
+  // Store shuffled answer for this render so answer() can check it
+  renderQuestion._answer = displayAnswer;
+
+  for (let i = 0; i < 4; i++) {
+    const btn = document.getElementById(`opt-${i}`);
+    const txt = document.getElementById(`opt-${i}-text`);
+    const letter = btn.querySelector('.option-letter');
+    if (i < optionCount) {
+      btn.className = isMemoryCare ? 'option-btn option-btn-mc' : 'option-btn';
+      btn.disabled = false;
+      btn.style.display = '';
+      btn.style.border = '';
+      btn.style.background = '';
+      btn.style.color = '';
+      btn.style.opacity = '';
+      letter.textContent = letters[i];
+      txt.textContent = displayOptions[i] || '';
+    } else {
+      btn.style.display = 'none';
+    }
+  }
+
+  document.getElementById('fun-fact-box').classList.remove('show');
+  document.getElementById('next-btn-wrap').classList.remove('show');
+  const pb = document.getElementById('cg-prompt-box');
+  if (pb) pb.classList.remove('show');
+
+  // Progress bar
+  const pct = (currentIdx / gameQuestions.length) * 100;
+  document.getElementById('progress-bar').style.width = pct + '%';
+
+  // Auto-read question if caregiver setting enabled
+  if (CG_AUTO_READ) {
+    setTimeout(readQuestion, 600);
+  }
+}
+
+// ─── ANSWERING ────────────────────────────────────────────────────────────────
+function answer(idx) {
+  if (CG_GENTLE_MODE && CG_DIFF_MODE === 'gentle') { answerGentle(idx); return; }
+  if (answered) return;
+  answered = true;
+  unlockAudio();
+
+  const q = gameQuestions[currentIdx];
+  const correctIdx = (CG_DIFF_MODE === 'memory_care' && renderQuestion._answer !== undefined)
+    ? renderQuestion._answer : q.answer;
+  const correct = idx === correctIdx;
+
+  // Disable all buttons
+  for (let i = 0; i < 4; i++) {
+    document.getElementById(`opt-${i}`).disabled = true;
+  }
+
+  // Highlight correct / wrong
+  document.getElementById(`opt-${correctIdx}`).classList.add('correct');
+  if (!correct) {
+    document.getElementById(`opt-${idx}`).classList.add('wrong');
+    if (CG_DIFF_MODE !== 'memory_care') playBuzz();
+  } else {
+    score++;
+    if (CG_DIFF_MODE !== 'memory_care') playDing();
+    launchConfetti();
+  }
+
+  // Flash screen
+  const screen = document.getElementById('screen-question');
+  screen.classList.add(correct ? 'flash-correct' : 'flash-wrong');
+  setTimeout(() => screen.classList.remove('flash-correct', 'flash-wrong'), 600);
+
+  updateScoreDisplay();
+
+  // Delay fun-fact, prompt and Next button so player can absorb correct answer first
+  setTimeout(() => {
+    document.getElementById('fun-fact-text').textContent = q.fun_fact || '';
+    const srcEl = document.getElementById('source-text');
+    if (srcEl) srcEl.textContent = q.source ? ('Source: ' + q.source) : '';
+    document.getElementById('fun-fact-box').classList.add('show');
+    document.getElementById('next-btn-wrap').classList.add('show');
+
+    // Show conversation prompt if enabled
+    const promptBox = document.getElementById('cg-prompt-box');
+    if (promptBox) {
+      const prompt = CG_PROMPTS ? q.reminiscence : null;
+      if (prompt) {
+        promptBox.textContent = '💬 ' + prompt;
+        promptBox.classList.add('show');
+      } else {
+        promptBox.classList.remove('show');
+      }
+    }
+
+    // Auto-scroll so Next button is visible
+    const nextWrap = document.getElementById('next-btn-wrap');
+    if (nextWrap) nextWrap.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+  }, 2000);
+}
+
+function nextQuestion() {
+  currentIdx++;
+  if (CG_GENTLE_MODE && CG_DIFF_MODE === 'gentle') {
+    if (currentIdx >= CG_GENTLE_COUNT) {
+      answered = false;
+      showGentleResult();
+    } else {
+      answered = false;
+      renderGentleQuestion();
+    }
+    return;
+  }
+  if (currentIdx >= gameQuestions.length) {
+    answered = false;
+    showResult();
+  } else {
+    answered = false;
+    renderQuestion();
+  }
+}
+
+// ─── GENTLE MODE GAME LOGIC ──────────────────────────────────────────────────
+let gentlePool = [];
+
+
+function startGentleGame() {
+  gentlePool = shuffle([...GENTLE_QUESTIONS]);
+  currentIdx = 0;
+  score      = 0;
+  paused     = false;
+
+  // Hide score, hide era badge, hide category, hide TTS btn, show progress
+  const scoreEl = document.getElementById('score-display');
+  if (scoreEl) scoreEl.style.display = 'none';
+  const ttsBtn = document.getElementById('tts-btn');
+  if (ttsBtn) ttsBtn.style.display = 'none';
+  const headerEl = document.getElementById('header');
+  const progressEl = document.getElementById('progress-wrap');
+  const pauseBtn = document.getElementById('pause-btn');
+  const pausedEl = document.getElementById('screen-paused');
+  if (headerEl) headerEl.style.display = '';
+  if (progressEl) progressEl.style.display = '';
+  if (pauseBtn) { pauseBtn.style.display = ''; pauseBtn.textContent = '⏸'; pauseBtn.onclick = pauseGame; }
+  if (pausedEl) pausedEl.classList.remove('active');
+
+  showScreen('question');
+  renderGentleQuestion();
+}
+
+function renderGentleQuestion() {
+  answered = false;
+  const q   = gentlePool[currentIdx % gentlePool.length];
+
+  // Shuffle which side correct answer appears on
+  const correctFirst = Math.random() < 0.5;
+  renderQuestion._gentleCorrect = correctFirst ? 0 : 1;
+
+  const optA = correctFirst ? q : { emoji: q.wrong, label: q.wrongLabel };
+  const optB = correctFirst ? { emoji: q.wrong, label: q.wrongLabel } : q;
+
+  // Header
+  document.getElementById('q-number').textContent =
+    `Question ${currentIdx + 1} of ${CG_GENTLE_COUNT}`;
+  document.getElementById('era-badge').textContent = '🌸 Picture Time';
+  document.getElementById('q-category').textContent = '';
+  document.getElementById('q-text').textContent = q.question;
+
+  // Two large emoji buttons
+  for (let i = 0; i < 4; i++) {
+    const btn = document.getElementById(`opt-${i}`);
+    btn.style.display = i < 2 ? '' : 'none';
+  }
+  const btn0 = document.getElementById('opt-0');
+  const btn1 = document.getElementById('opt-1');
+  [btn0, btn1].forEach(b => {
+    b.className  = 'option-btn option-btn-gentle';
+    b.disabled   = false;
+    b.style.border     = '';
+    b.style.background = '';
+    b.style.color      = '';
+    b.style.opacity    = '';
+  });
+  document.getElementById('opt-0-text').innerHTML =
+    `<span class="gentle-emoji">${optA.emoji}</span><span class="gentle-label">${optA.label}</span>`;
+  document.getElementById('opt-1-text').innerHTML =
+    `<span class="gentle-emoji">${optB.emoji}</span><span class="gentle-label">${optB.label}</span>`;
+  document.querySelector('#opt-0 .option-letter').textContent = '';
+  document.querySelector('#opt-1 .option-letter').textContent = '';
+
+  document.getElementById('fun-fact-box').classList.remove('show');
+  document.getElementById('next-btn-wrap').classList.remove('show');
+  const pb2 = document.getElementById('cg-prompt-box');
+  if (pb2) pb2.classList.remove('show');
+
+  // Progress bar
+  const pct = (currentIdx / CG_GENTLE_COUNT) * 100;
+  document.getElementById('progress-bar').style.width = pct + '%';
+
+  // No TTS in Gentle mode — questions are visual/emoji based
+}
+
+function answerGentle(idx) {
+  if (answered || paused) return;
+  answered = true;
+  unlockAudio();
+
+  const correctIdx = renderQuestion._gentleCorrect;
+
+  // Disable both buttons
+  document.getElementById('opt-0').disabled = true;
+  document.getElementById('opt-1').disabled = true;
+
+  // Gentle mode — green on correct only, no dimming on wrong, no red
+  document.getElementById('opt-0').disabled = true;
+  document.getElementById('opt-1').disabled = true;
+  const correctBtn = document.getElementById(`opt-${correctIdx}`);
+  correctBtn.style.border     = '3px solid var(--green-light)';
+  correctBtn.style.background = 'rgba(27,140,58,0.35)';
+  correctBtn.style.color      = '#b8f0cc';
+
+  // Visual flash always; confetti only on correct
+  const screen = document.getElementById('screen-question');
+  screen.classList.add('flash-correct');
+  setTimeout(() => screen.classList.remove('flash-correct'), 600);
+  if (idx === correctIdx) launchConfetti();
+
+  // Praise via TTS
+  const praise = GENTLE_PRAISE[Math.floor(Math.random() * GENTLE_PRAISE.length)];
+  const q = gentlePool[currentIdx % gentlePool.length];
+  // No TTS in Gentle mode
+
+  document.getElementById('fun-fact-box').classList.remove('show');
+  document.getElementById('next-btn-wrap').classList.add('show');
+}
+
+// ─── SCORE ────────────────────────────────────────────────────────────────────
+function updateScoreDisplay() {
+  document.getElementById('score-display').textContent = `${score} / ${Math.min(currentIdx + (answered ? 1 : 0), gameQuestions.length)}`;
+}
+
+// ─── PAUSE / RESUME ──────────────────────────────────────────────────────────
+function pauseGame() {
+  paused = true;
+  document.getElementById('screen-paused').classList.add('active');
+  const btn = document.getElementById('pause-btn');
+  if (btn) { btn.textContent = '▶'; btn.onclick = resumeGame; }
+}
+function resumeGame() {
+  paused = false;
+  document.getElementById('screen-paused').classList.remove('active');
+  const btn = document.getElementById('pause-btn');
+  if (btn) { btn.textContent = '⏸'; btn.onclick = pauseGame; }
+}
+
+// ─── GENTLE RESULT SCREEN — now handled by showResult() ─────────────────────
+function showGentleResult() { showResult(); }
+
+// ─── RESULT SCREEN ────────────────────────────────────────────────────────────
+function showResult() {
+  const total = (CG_GENTLE_MODE && CG_DIFF_MODE === 'gentle') ? CG_GENTLE_COUNT : gameQuestions.length;
+  const pct   = Math.round((score / total) * 100);
+  const isSimple = CG_GENTLE_MODE || CG_DIFF_MODE === 'memory_care';
+
+  document.getElementById('result-full').style.display   = isSimple ? 'none' : '';
+  document.getElementById('result-simple').style.display = isSimple ? 'block' : 'none';
+  const changeYrBtn = document.getElementById('result-change-yr');
+  if (changeYrBtn) changeYrBtn.style.display = isSimple ? 'none' : '';
+
+  if (isSimple) {
+    // Simple warm result for Gentle / Memory Care
+    const simpleData = [
+      { min: 80, emoji: '🌟', title: 'Superstar!',     msg: 'You were absolutely amazing today. What a wonderful game!' },
+      { min: 60, emoji: '🌸', title: 'Wonderful Job!', msg: 'You did so well today. It was a joy to play with you!' },
+      { min: 0,  emoji: '💛', title: 'Well Done!',     msg: 'Thank you for playing today. You made it special!' },
+    ];
+    const sd = simpleData.find(d => pct >= d.min);
+    document.getElementById('result-simple-emoji').textContent = sd.emoji;
+    document.getElementById('result-simple-title').textContent = sd.title;
+    document.getElementById('result-simple-msg').textContent   = sd.msg;
+    if (pct >= 60) {
+      setTimeout(() => { launchConfetti(); }, 300);
+      setTimeout(() => { launchConfetti(); }, 900);
+    }
+  } else {
+    // Full result for Standard / Easy / Mixed
+    // Era badge
+    const badge = document.getElementById('result-era-badge');
+    if (badge && birthYear) {
+      const decade = Math.floor(parseInt(birthYear) / 10) * 10;
+      badge.textContent = `Your ${decade}s Quiz`;
+    }
+
+    // Score numbers
+    document.getElementById('result-score-num').textContent   = score;
+    document.getElementById('result-score-total').textContent = total;
+
+    // Stars (1–5)
+    const stars = pct >= 90 ? 5 : pct >= 75 ? 4 : pct >= 60 ? 3 : pct >= 40 ? 2 : 1;
+    document.getElementById('result-stars').textContent = '⭐'.repeat(stars) + '✩'.repeat(5 - stars);
+
+    // Emoji, title, message
+    let emoji, title, message;
+    if (pct >= 90) {
+      emoji = '🏆'; title = 'Memory Champion!';
+      message = 'Incredible! The golden years are crystal clear in your mind. What a remarkable memory!';
+    } else if (pct >= 75) {
+      emoji = '🌟'; title = 'Golden Memory!';
+      message = 'Wonderful! You clearly lived through some amazing times and remember them well.';
+    } else if (pct >= 60) {
+      emoji = '🎉'; title = 'Good Going!';
+      message = 'You remember more than you think! The music, movies and moments of your era are still with you.';
+    } else if (pct >= 40) {
+      emoji = '😊'; title = 'Nice Try!';
+      message = 'Some memories fade, but the music and moments of your golden years never really leave us.';
+    } else {
+      emoji = '💫'; title = 'Keep Playing!';
+      message = 'Every game brings back more memories. Give it another go — you might surprise yourself!';
+    }
+
+    document.getElementById('result-emoji').textContent   = emoji;
+    document.getElementById('result-title').textContent   = title;
+    document.getElementById('result-message').textContent = message;
+
+    if (pct >= 75) {
+      setTimeout(() => { playDing(); launchConfetti(); }, 300);
+      setTimeout(() => { playDing(); launchConfetti(); }, 800);
+    } else {
+      setTimeout(playDing, 300);
+    }
+  }
+
+  document.getElementById('progress-bar').style.width = '100%';
+  showScreen('result');
+}
+
+// ─── NAVIGATION ───────────────────────────────────────────────────────────────
+function showScreen(name) {
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  document.getElementById('screen-' + name).classList.add('active');
+}
+
+function showError(msg) {
+  document.getElementById('error-msg').textContent = msg;
+  showScreen('error');
+}
+
+// ─── DISABLE PINCH ZOOM ──────────────────────────────────────────────────────
+document.addEventListener('touchmove', function(e) {
+  if (e.touches.length > 1) e.preventDefault();
+}, { passive: false });
+document.addEventListener('gesturestart', function(e) { e.preventDefault(); }, { passive: false });
+document.addEventListener('gesturechange', function(e) { e.preventDefault(); }, { passive: false });
+
+// ─── LANDSCAPE DETECTION ─────────────────────────────────────────────────────
+function checkOrientation() {
+  // Only warn on mobile/tablet — desktops are always landscape and that's fine
+  const isMobile = ('ontouchstart' in window || navigator.maxTouchPoints > 0) && window.screen.width < 1200;
+  const isLandscape = window.innerWidth > window.innerHeight;
+  const overlay = document.getElementById('landscape-overlay');
+  if (overlay) overlay.classList.toggle('show', isMobile && isLandscape);
+}
+window.addEventListener('resize', checkOrientation);
+window.addEventListener('orientationchange', checkOrientation);
+checkOrientation();
+
+function showPhoneNoticeIfNeeded() {
+  try {
+    var touch = ('ontouchstart' in window) || navigator.maxTouchPoints > 0;
+    // Phone = touch device whose SHORTER viewport side is <=500px (a tablet's is >=600).
+    // Uses the viewport (the actual play area), which is what gets cramped on a phone.
+    var minSide = Math.min(window.innerWidth, window.innerHeight);
+    if (!(touch && minSide <= 500)) return;                 // not a phone
+    if (localStorage.getItem('pg_phone_ok') === '1') return; // already dismissed
+    if (document.getElementById('phone-notice')) return;
+    var d = document.createElement('div');
+    d.id = 'phone-notice';
+    d.setAttribute('role', 'dialog');
+    d.setAttribute('aria-modal', 'true');
+    d.style.cssText = 'position:fixed;inset:0;z-index:10000;background:rgba(10,10,26,0.97);display:flex;align-items:center;justify-content:center;padding:24px;text-align:center';
+    d.innerHTML =
+      '<div style="max-width:420px;color:#fff8e7;font-family:Georgia,serif">' +
+      '<div style="font-size:44px;margin-bottom:10px">\uD83D\uDCF1\u27A1\uFE0F\uD83D\uDCFA</div>' +
+      '<div style="font-size:22px;font-weight:bold;color:#FF9E42;margin-bottom:12px">Best on a Tablet or Computer</div>' +
+      '<div style="font-size:16px;line-height:1.5;margin-bottom:22px">This game is made for a <b>tablet</b> or computer, where the prices and buttons are big and easy to see. It will still work on a phone, but a larger screen is much easier — especially for older eyes.</div>' +
+      '<button onclick="dismissPhoneNotice()" style="background:linear-gradient(180deg,#FFBE73,#FF9E42,#B85C10);color:#1a1000;font-weight:bold;font-size:17px;padding:14px 30px;border:none;border-radius:14px;cursor:pointer;font-family:Georgia,serif">Continue on my phone</button>' +
+      '</div>';
+    document.body.appendChild(d);
+  } catch (e) {}
+}
+function dismissPhoneNotice() {
+  try { localStorage.setItem('pg_phone_ok', '1'); } catch (e) {}
+  var d = document.getElementById('phone-notice');
+  if (d) d.remove();
+}
+window.addEventListener('load', showPhoneNoticeIfNeeded);
+
+// ─── HOW TO PLAY ──────────────────────────────────────────────────────────────
+function openHelp() {
+  document.getElementById('help-overlay').classList.add('show');
+}
+function closeHelp() {
+  document.getElementById('help-overlay').classList.remove('show');
+  safeStorage.setItem('help_seen', 'true');
+}
+// Show on first launch
+if (safeStorage.getItem('help_seen') !== 'true') {
+  window.addEventListener('load', function() {
+    setTimeout(openHelp, 800);
+  });
+}
+
+// ─── PAUSE ON TAB HIDE ────────────────────────────────────────────────────────
+document.addEventListener('visibilitychange', function() {
+  if (document.hidden) {
+    const qScreen = document.getElementById('screen-question');
+    if (qScreen && qScreen.classList.contains('active') && !paused) {
+      pauseGame();
+    }
+  }
+});
+
+// ─── INIT ─────────────────────────────────────────────────────────────────────
+(async function init() {
+  showScreen('loading');
+  try {
+    await loadAllQuestions();
+    if (allQuestions.length === 0) {
+      showError('Questions couldn\'t load. Please try refreshing the page, or check that all game files are in the same folder.');
+      return;
+    }
+    showScreen('welcome');
+    applyGentleWelcome();
+    updateYearDisplay();
+  } catch(e) {
+    showError('Something went wrong loading the game. Please try refreshing the page.');
+  }
+})();
+
+// ─── SERVICE WORKER (PWA install) ─────────────────────────────────────────────
+if ('serviceWorker' in navigator) {
+  const swCode = `
+const CACHE = 'price-game-f43f37de7b';
+const FILES = ['./'];
+self.addEventListener('install', e => e.waitUntil(
+  caches.open(CACHE).then(c => c.addAll(FILES)).then(() => self.skipWaiting())
+));
+self.addEventListener('activate', e => e.waitUntil(
+  caches.keys().then(keys => Promise.all(
+    keys.filter(k => k !== CACHE).map(k => caches.delete(k))
+  )).then(() => self.clients.claim())
+));
+self.addEventListener('fetch', e => e.respondWith(
+  caches.match(e.request).then(r => r || fetch(e.request).then(res => {
+    const clone = res.clone();
+    caches.open(CACHE).then(c => c.put(e.request, clone));
+    return res;
+  }))
+));
+`;
+  const blob = new Blob([swCode], { type: 'text/javascript' });
+  const swUrl = URL.createObjectURL(blob);
+  navigator.serviceWorker.register(swUrl).catch(() => {});
+}
+
+// ─── PWA MANIFEST ─────────────────────────────────────────────────────────────
+(function() {
+  const manifest = {
+    name: 'Memory Lane Price Game',
+    short_name: 'Price Game',
+    start_url: './index.html',
+    display: 'standalone',
+    background_color: '#8B5E3C',
+    theme_color: '#1a1a4e',
+    description: 'A 1960s price-guessing reminiscence game for seniors — sourced prices + conversation prompts',
+    icons: [
+      { src: 'data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><rect width="100" height="100" rx="20" fill="%231a1a4e"/><text y=".9em" font-size="72" x="8">🏷️</text></svg>', sizes: '192x192', type: 'image/svg+xml' }
+    ]
+  };
+  const blob = new Blob([JSON.stringify(manifest)], { type: 'application/json' });
+  const url  = URL.createObjectURL(blob);
+  const link = document.createElement('link');
+  link.rel = 'manifest'; link.href = url;
+  document.head.appendChild(link);
+})();
+</script>
+
+<!-- ─── LANDSCAPE OVERLAY ──────────────────────────────────────────────────── -->
+<div id="landscape-overlay">
+  <div class="landscape-icon">📱</div>
+  <div class="landscape-title">Please Rotate Your Device</div>
+  <div class="landscape-sub">Memory Lane Price Game plays best in portrait mode</div>
+</div>
+
+<!-- ─── HOW TO PLAY MODAL ───────────────────────────────────────────────────── -->
+<div id="help-overlay" role="dialog" aria-modal="true" aria-label="How to Play">
+  <div class="help-modal">
+    <div class="help-title">🎮 How to Play</div>
+    <div class="help-step">
+      <div class="help-step-num">1</div>
+      <div class="help-step-text"><strong>Pick a round</strong> — the grocery store, a day out, the toy shop… or just choose Everything.</div>
+    </div>
+    <div class="help-step">
+      <div class="help-step-num">2</div>
+      <div class="help-step-text"><strong>Tap Start Playing</strong>, then guess the old price by tapping one of the three choices.</div>
+    </div>
+    <div class="help-step">
+      <div class="help-step-num">3</div>
+      <div class="help-step-text"><strong>Green means correct</strong>, red means wrong — then see the real price, a fun fact, and a question to chat about.</div>
+    </div>
+    <div class="help-step">
+      <div class="help-step-num">4</div>
+      <div class="help-step-text"><strong>Tap Next Question</strong> to keep going. See how many you can get right!</div>
+    </div>
+    <div class="help-step">
+      <div class="help-step-num">5</div>
+      <div class="help-step-text"><strong>Caregivers:</strong> tap the ⚙ Caregiver Settings button <em>three times</em> to adjust difficulty and options.</div>
+    </div>
+    <button class="big-btn" style="margin-top:8px" onclick="closeHelp()">Got it! Let's Play 🎉</button>
+  </div>
+</div>
+
+<!-- ─── CAREGIVER PANEL ─────────────────────────────────────────────────────── -->
+<div id="cg-modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.82);z-index:9999;display:none;align-items:flex-start;justify-content:center;padding:12px;overflow-y:auto">
+  <div style="background:#1a1a4e;border:2px solid rgba(255,248,231,0.3);border-radius:16px;padding:16px 20px 14px;max-width:780px;width:100%;max-height:96dvh;overflow-y:auto;color:#fff8e7;font-family:inherit">
+
+    <!-- HEADER -->
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">
+      <div style="font-size:18px;font-weight:700">⚙️ Caregiver Settings</div>
+      <div style="display:flex;align-items:center;gap:12px">
+        <div style="font-size:11px;opacity:0.4">Changes saved automatically</div>
+        <button onclick="cgClose()" aria-label="Close settings" style="background:rgba(255,255,255,0.12);border:2px solid rgba(255,248,231,0.3);border-radius:8px;color:#fff8e7;font-size:18px;line-height:1;width:36px;height:36px;cursor:pointer;display:flex;align-items:center;justify-content:center">✕</button>
+      </div>
+    </div>
+
+    <!-- ROW 1: Difficulty (left, wider) + Gentle length + Questions per game (right) -->
+    <div style="display:grid;grid-template-columns:2fr 1fr;gap:12px;margin-bottom:10px">
+
+      <!-- Difficulty -->
+      <div>
+        <div style="font-size:13px;font-weight:600;opacity:0.7;margin-bottom:6px;text-transform:uppercase;letter-spacing:0.5px">Difficulty</div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px">
+          <button id="cg-btn-gentle"      onclick="cgSetDiff('gentle')"      style="padding:8px 10px;border-radius:8px;border:2px solid transparent;background:rgba(255,255,255,0.1);color:#fff8e7;font-size:13px;cursor:pointer;text-align:left">🌸 Gentle Pictures<br><span style="font-size:11px;color:rgba(255,248,231,0.55)">Emoji only</span></button>
+          <button id="cg-btn-memory_care" onclick="cgSetDiff('memory_care')" style="padding:8px 10px;border-radius:8px;border:2px solid transparent;background:rgba(255,255,255,0.1);color:#fff8e7;font-size:13px;cursor:pointer;text-align:left">🧡 Memory Care<br><span style="font-size:11px;color:rgba(255,248,231,0.55)">2 choices</span></button>
+          <button id="cg-btn-easy"        onclick="cgSetDiff('easy')"        style="padding:8px 10px;border-radius:8px;border:2px solid transparent;background:rgba(255,255,255,0.1);color:#fff8e7;font-size:13px;cursor:pointer;text-align:left">🌟 Easy<br><span style="font-size:11px;color:rgba(255,248,231,0.55)">Simple questions</span></button>
+          <button id="cg-btn-standard"    onclick="cgSetDiff('standard')"    style="padding:8px 10px;border-radius:8px;border:2px solid transparent;background:rgba(255,255,255,0.1);color:#fff8e7;font-size:13px;cursor:pointer;text-align:left">🎯 Standard<br><span style="font-size:11px;color:rgba(255,248,231,0.55)">Full challenge</span></button>
+          <button id="cg-btn-mixed"       onclick="cgSetDiff('mixed')"       style="padding:8px 10px;border-radius:8px;border:2px solid transparent;background:rgba(255,255,255,0.1);color:#fff8e7;font-size:13px;cursor:pointer;text-align:left;grid-column:1/-1">🎲 Mixed Levels<br><span style="font-size:11px;color:rgba(255,248,231,0.55)">Easy &amp; Standard combined</span></button>
+        </div>
+      </div>
+
+      <!-- Right column: Gentle length + Questions per game stacked -->
+      <div style="display:flex;flex-direction:column;gap:10px">
+        <div>
+          <div style="font-size:13px;font-weight:600;opacity:0.7;margin-bottom:6px;text-transform:uppercase;letter-spacing:0.5px">🌸 Gentle Length</div>
+          <div style="display:flex;gap:6px">
+            <button id="cg-gentle-10" onclick="cgSetGentleCount(10)" style="flex:1;padding:8px;border-radius:8px;border:2px solid transparent;background:rgba(255,255,255,0.1);color:#fff8e7;font-size:14px;cursor:pointer">10</button>
+            <button id="cg-gentle-15" onclick="cgSetGentleCount(15)" style="flex:1;padding:8px;border-radius:8px;border:2px solid transparent;background:rgba(255,255,255,0.1);color:#fff8e7;font-size:14px;cursor:pointer">15</button>
+            <button id="cg-gentle-20" onclick="cgSetGentleCount(20)" style="flex:1;padding:8px;border-radius:8px;border:2px solid transparent;background:rgba(255,255,255,0.1);color:#fff8e7;font-size:14px;cursor:pointer">20</button>
+          </div>
+        </div>
+        <div>
+          <div style="font-size:13px;font-weight:600;opacity:0.7;margin-bottom:6px;text-transform:uppercase;letter-spacing:0.5px">Questions / Game</div>
+          <div style="display:flex;gap:6px">
+            <button id="cg-btn-10" onclick="cgSetCount(10)" style="flex:1;padding:8px;border-radius:8px;border:2px solid transparent;background:rgba(255,255,255,0.1);color:#fff8e7;font-size:14px;cursor:pointer">10</button>
+            <button id="cg-btn-20" onclick="cgSetCount(20)" style="flex:1;padding:8px;border-radius:8px;border:2px solid transparent;background:rgba(255,255,255,0.1);color:#fff8e7;font-size:14px;cursor:pointer">20</button>
+            <button id="cg-btn-30" onclick="cgSetCount(30)" style="flex:1;padding:8px;border-radius:8px;border:2px solid transparent;background:rgba(255,255,255,0.1);color:#fff8e7;font-size:14px;cursor:pointer">30</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ROW 2: Score · Read Aloud · Conversation Starters — 3 equal columns -->
+    <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;margin-bottom:10px">
+      <div>
+        <div style="font-size:13px;font-weight:600;opacity:0.7;margin-bottom:6px;text-transform:uppercase;letter-spacing:0.5px">Score Display</div>
+        <div style="display:flex;gap:6px">
+          <button id="cg-btn-score-show" onclick="cgSetScore(false)" style="flex:1;padding:8px;border-radius:8px;border:2px solid transparent;background:rgba(255,255,255,0.1);color:#fff8e7;font-size:13px;cursor:pointer">Show</button>
+          <button id="cg-btn-score-hide" onclick="cgSetScore(true)"  style="flex:1;padding:8px;border-radius:8px;border:2px solid transparent;background:rgba(255,255,255,0.1);color:#fff8e7;font-size:13px;cursor:pointer">Hide</button>
+        </div>
+      </div>
+      <div>
+        <div style="font-size:13px;font-weight:600;opacity:0.7;margin-bottom:6px;text-transform:uppercase;letter-spacing:0.5px">Read Aloud</div>
+        <div style="display:flex;gap:6px">
+          <button id="cg-btn-read-off"  onclick="cgSetAutoRead(false)" style="flex:1;padding:8px;border-radius:8px;border:2px solid transparent;background:rgba(255,255,255,0.1);color:#fff8e7;font-size:13px;cursor:pointer">Off</button>
+          <button id="cg-btn-read-auto" onclick="cgSetAutoRead(true)"  style="flex:1;padding:8px;border-radius:8px;border:2px solid transparent;background:rgba(255,255,255,0.1);color:#fff8e7;font-size:13px;cursor:pointer">Auto 🔊</button>
+        </div>
+      </div>
+      <div>
+        <div style="font-size:13px;font-weight:600;opacity:0.7;margin-bottom:2px;text-transform:uppercase;letter-spacing:0.5px">Conversation Starters 💬</div>
+        <div style="font-size:11px;color:rgba(255,248,231,0.45);margin-bottom:6px">Talking point after each answer</div>
+        <div style="display:flex;gap:6px">
+          <button id="cg-btn-prompts-off" onclick="cgSetPrompts(false)" style="flex:1;padding:8px;border-radius:8px;border:2px solid transparent;background:rgba(255,255,255,0.1);color:#fff8e7;font-size:13px;cursor:pointer">Off</button>
+          <button id="cg-btn-prompts-on"  onclick="cgSetPrompts(true)"  style="flex:1;padding:8px;border-radius:8px;border:2px solid transparent;background:rgba(255,255,255,0.1);color:#fff8e7;font-size:13px;cursor:pointer">On</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- ROW 3: Categories — 6-column single row -->
+    <div id="cg-cat-section" style="margin-bottom:12px">
+      <div style="font-size:13px;font-weight:600;opacity:0.7;margin-bottom:6px;text-transform:uppercase;letter-spacing:0.5px">Question Categories <span style="font-weight:400;opacity:0.6;font-size:11px">(tap to toggle)</span></div>
+      <div style="display:grid;grid-template-columns:repeat(6,1fr);gap:6px">
+        <button id="cg-cat-music"        onclick="cgToggleCategory('music')"        style="padding:8px 4px;border-radius:8px;border:2px solid transparent;background:rgba(255,255,255,0.1);color:#fff8e7;font-size:12px;cursor:pointer">🎵<br>Music</button>
+        <button id="cg-cat-television"   onclick="cgToggleCategory('television')"   style="padding:8px 4px;border-radius:8px;border:2px solid transparent;background:rgba(255,255,255,0.1);color:#fff8e7;font-size:12px;cursor:pointer">📺<br>TV</button>
+        <button id="cg-cat-movies"       onclick="cgToggleCategory('movies')"       style="padding:8px 4px;border-radius:8px;border:2px solid transparent;background:rgba(255,255,255,0.1);color:#fff8e7;font-size:12px;cursor:pointer">🎬<br>Movies</button>
+        <button id="cg-cat-sports"       onclick="cgToggleCategory('sports')"       style="padding:8px 4px;border-radius:8px;border:2px solid transparent;background:rgba(255,255,255,0.1);color:#fff8e7;font-size:12px;cursor:pointer">🏆<br>Sports</button>
+        <button id="cg-cat-world_events" onclick="cgToggleCategory('world_events')" style="padding:8px 4px;border-radius:8px;border:2px solid transparent;background:rgba(255,255,255,0.1);color:#fff8e7;font-size:12px;cursor:pointer">🌎<br>World</button>
+                <button id="cg-cat-americana"    onclick="cgToggleCategory('americana')"    style="padding:8px 4px;border-radius:8px;border:2px solid transparent;background:rgba(255,255,255,0.1);color:#fff8e7;font-size:12px;cursor:pointer">🎡<br>Daily Life</button>
+      </div>
+    </div>
+
+    <!-- Start button -->
+    <div style="text-align:center;margin-top:8px">
+      <button onclick="cgClose()" style="background:linear-gradient(135deg,#B85C10,#FF9E42);color:#1a1000;font-weight:700;font-size:16px;padding:12px 40px;border:none;border-radius:30px;cursor:pointer;letter-spacing:0.5px">
+        ▶ Start Play
+      </button>
+    </div>
+
+  </div><!-- end caregiver-panel -->
+</div><!-- end screen-caregiver -->
+
+</body>
+</html>
