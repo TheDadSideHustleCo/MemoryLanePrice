@@ -7,6 +7,9 @@
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="Price Game">
 <meta name="theme-color" content="#1a1a4e">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="apple-touch-icon" href="icon-180.png">
+<link rel="icon" type="image/png" href="icon-192.png">
 <title>Memory Lane Price Game — The 1960s</title>
 <style>
   *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
@@ -2468,52 +2471,15 @@ document.addEventListener('visibilitychange', function() {
   }
 })();
 
-// ─── SERVICE WORKER (PWA install) ─────────────────────────────────────────────
-if ('serviceWorker' in navigator) {
-  const swCode = `
-const CACHE = 'price-game-f43f37de7b';
-const FILES = ['./'];
-self.addEventListener('install', e => e.waitUntil(
-  caches.open(CACHE).then(c => c.addAll(FILES)).then(() => self.skipWaiting())
-));
-self.addEventListener('activate', e => e.waitUntil(
-  caches.keys().then(keys => Promise.all(
-    keys.filter(k => k !== CACHE).map(k => caches.delete(k))
-  )).then(() => self.clients.claim())
-));
-self.addEventListener('fetch', e => e.respondWith(
-  caches.match(e.request).then(r => r || fetch(e.request).then(res => {
-    const clone = res.clone();
-    caches.open(CACHE).then(c => c.put(e.request, clone));
-    return res;
-  }))
-));
-`;
-  const blob = new Blob([swCode], { type: 'text/javascript' });
-  const swUrl = URL.createObjectURL(blob);
-  navigator.serviceWorker.register(swUrl).catch(() => {});
+// ─── SERVICE WORKER (offline + install) ───────────────────────────────────────
+// Registered from a REAL file (sw.js) next to this page — browsers reject blob: workers.
+// Only runs when hosted over https/http (GitHub Pages). A downloaded copy opened from the
+// device (file://) has no worker, but it is one self-contained file, so it needs none.
+if ('serviceWorker' in navigator && /^https?:$/.test(location.protocol)) {
+  window.addEventListener('load', function () {
+    navigator.serviceWorker.register('./sw.js').catch(function () {});
+  });
 }
-
-// ─── PWA MANIFEST ─────────────────────────────────────────────────────────────
-(function() {
-  const manifest = {
-    name: 'Memory Lane Price Game',
-    short_name: 'Price Game',
-    start_url: './index.html',
-    display: 'standalone',
-    background_color: '#8B5E3C',
-    theme_color: '#1a1a4e',
-    description: 'A 1960s price-guessing reminiscence game for seniors — sourced prices + conversation prompts',
-    icons: [
-      { src: 'data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><rect width="100" height="100" rx="20" fill="%231a1a4e"/><text y=".9em" font-size="72" x="8">🏷️</text></svg>', sizes: '192x192', type: 'image/svg+xml' }
-    ]
-  };
-  const blob = new Blob([JSON.stringify(manifest)], { type: 'application/json' });
-  const url  = URL.createObjectURL(blob);
-  const link = document.createElement('link');
-  link.rel = 'manifest'; link.href = url;
-  document.head.appendChild(link);
-})();
 </script>
 
 <!-- ─── LANDSCAPE OVERLAY ──────────────────────────────────────────────────── -->
